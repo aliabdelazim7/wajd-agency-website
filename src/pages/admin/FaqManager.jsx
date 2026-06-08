@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Plus, Trash2, Edit3, Save, X, ArrowUp, ArrowDown } from 'lucide-react';
 import { api } from '../../services/api';
 import { audioManager } from '../../utils/audioManager';
@@ -11,6 +11,9 @@ const FaqManager = () => {
   const [question, setQuestion] = useState('');
   const [answer, setAnswer] = useState('');
   const [feedback, setFeedback] = useState({ type: '', msg: '' });
+
+  const reorderTimeoutRef = useRef(null);
+  const latestFaqsRef = useRef(null);
 
   const handleHover = () => {
     audioManager.playHover();
@@ -33,6 +36,11 @@ const FaqManager = () => {
 
   useEffect(() => {
     fetchFaqs();
+    return () => {
+      if (reorderTimeoutRef.current) {
+        clearTimeout(reorderTimeoutRef.current);
+      }
+    };
   }, []);
 
   const resetForm = () => {
@@ -97,7 +105,7 @@ const FaqManager = () => {
   };
 
   // Reorder FAQ items locally and update database
-  const handleMove = async (index, direction) => {
+  const handleMove = (index, direction) => {
     handleClick();
     const newIndex = direction === 'up' ? index - 1 : index + 1;
     if (newIndex < 0 || newIndex >= faqs.length) return;
@@ -110,15 +118,24 @@ const FaqManager = () => {
 
     // Optimistically update local state
     setFaqs(reorderedList);
+    latestFaqsRef.current = reorderedList;
 
-    try {
-      await api.faqs.reorder(reorderedList);
-    } catch (err) {
-      console.error('Failed to update FAQ order in database:', err);
-      setFeedback({ type: 'error', msg: 'فشل حفظ الترتيب الجديد في قاعدة البيانات.' });
-      // Revert back by re-fetching
-      fetchFaqs();
+    // Clear previous timeout
+    if (reorderTimeoutRef.current) {
+      clearTimeout(reorderTimeoutRef.current);
     }
+
+    // Debounce database update
+    reorderTimeoutRef.current = setTimeout(async () => {
+      try {
+        await api.faqs.reorder(latestFaqsRef.current);
+      } catch (err) {
+        console.error('Failed to update FAQ order in database:', err);
+        setFeedback({ type: 'error', msg: 'فشل حفظ الترتيب الجديد في قاعدة البيانات.' });
+        // Revert back by re-fetching
+        fetchFaqs();
+      }
+    }, 500);
   };
 
   if (loading) {

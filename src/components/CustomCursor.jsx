@@ -6,35 +6,35 @@ const INTERACTIVE_SELECTORS = '.action-btn, .nav-link, .portfolio-card, a, butto
 const IMAGE_SELECTORS = '[data-cursor-view]';
 
 function CustomCursor() {
+  const [isTouchDevice] = useState(() => {
+    if (typeof window === 'undefined') return true;
+    const hasTouch = 'ontouchstart' in window || navigator.maxTouchPoints > 0 || (window.matchMedia && window.matchMedia('(pointer: coarse)').matches);
+    const isMobileSize = window.innerWidth < 1024;
+    return hasTouch || isMobileSize;
+  });
+
   const dotRef = useRef(null);
   const ringRef = useRef(null);
   const textRef = useRef(null);
   const trailRefs = useRef([]);
   const mousePos = useRef({ x: -100, y: -100 });
-  const isTouch = useRef(false);
-  const [isVisible, setIsVisible] = useState(false);
   const rafId = useRef(null);
-  const trailPositions = useRef(Array.from({ length: TRAIL_COUNT }, () => ({ x: -100, y: -100 })));
 
   // Check for touch device
   useEffect(() => {
-    if ('ontouchstart' in window || navigator.maxTouchPoints > 0) {
-      isTouch.current = true;
-      return;
-    }
+    if (isTouchDevice) return;
 
-    setIsVisible(true);
     // Add cursor-none class to body
     document.body.classList.add('custom-cursor-active');
 
     return () => {
       document.body.classList.remove('custom-cursor-active');
     };
-  }, []);
+  }, [isTouchDevice]);
 
   // Main cursor logic
   useEffect(() => {
-    if (isTouch.current) return;
+    if (isTouchDevice) return;
 
     const dot = dotRef.current;
     const ring = ringRef.current;
@@ -49,33 +49,33 @@ function CustomCursor() {
       mousePos.current = { x: e.clientX, y: e.clientY };
     };
 
+    let ringX = mousePos.current.x;
+    let ringY = mousePos.current.y;
+    const trailPositions = Array.from({ length: TRAIL_COUNT }, () => ({ x: mousePos.current.x, y: mousePos.current.y }));
+
     // Animate loop with requestAnimationFrame
     const animate = () => {
-      const { x, y } = mousePos.current;
+      const { x: targetX, y: targetY } = mousePos.current;
 
       // Dot follows instantly
-      gsap.set(dot, { x, y });
+      gsap.set(dot, { x: targetX, y: targetY });
 
-      // Ring follows with elastic delay
-      gsap.to(ring, {
-        x,
-        y,
-        duration: 0.5,
-        ease: 'elastic.out(1, 0.4)',
-        overwrite: 'auto',
-      });
+      // Ring follows with smooth delay
+      ringX += (targetX - ringX) * 0.2;
+      ringY += (targetY - ringY) * 0.2;
+      gsap.set(ring, { x: ringX, y: ringY });
 
       // Trail particles follow with increasing delay
+      let prevX = ringX;
+      let prevY = ringY;
       trailRefs.current.forEach((trail, i) => {
         if (!trail) return;
-        const delay = (i + 1) * 0.06;
-        gsap.to(trail, {
-          x,
-          y,
-          duration: 0.3 + delay,
-          ease: 'power2.out',
-          overwrite: 'auto',
-        });
+        const pos = trailPositions[i];
+        pos.x += (prevX - pos.x) * 0.25;
+        pos.y += (prevY - pos.y) * 0.25;
+        gsap.set(trail, { x: pos.x, y: pos.y });
+        prevX = pos.x;
+        prevY = pos.y;
       });
 
       rafId.current = requestAnimationFrame(animate);
@@ -244,9 +244,9 @@ function CustomCursor() {
         el.removeEventListener('mouseleave', onImageLeave);
       });
     };
-  }, [isVisible]);
+  }, [isTouchDevice]);
 
-  if (!isVisible) return null;
+  if (isTouchDevice) return null;
 
   return (
     <div className="custom-cursor-wrapper" aria-hidden="true">

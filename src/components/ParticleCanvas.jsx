@@ -5,7 +5,7 @@ const ParticleCanvas = ({ activeSection }) => {
   const particlesRef = useRef([]);
   const mouseRef = useRef({ x: null, y: null, radius: 130 });
   const animationFrameRef = useRef(null);
-  const [isMobile, setIsMobile] = useState(false);
+  const [isMobile, setIsMobile] = useState(() => typeof window !== 'undefined' ? window.innerWidth < 1024 : false);
 
   useEffect(() => {
     const checkMobile = () => {
@@ -278,9 +278,11 @@ const ParticleCanvas = ({ activeSection }) => {
       window.removeEventListener('resize', resizeCanvas);
       window.removeEventListener('mousemove', handleMouseMove);
       window.removeEventListener('mouseleave', handleMouseLeave);
-      cancelAnimationFrame(animationFrameRef.current);
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+      }
     };
-  }, [activeSection]);
+  }, [activeSection, isMobile]);
 
   if (isMobile) return null;
 

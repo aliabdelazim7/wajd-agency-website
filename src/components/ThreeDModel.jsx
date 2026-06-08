@@ -3,19 +3,25 @@ import * as THREE from 'three';
 
 const ThreeDModel = () => {
   const containerRef = useRef(null);
-  const [isMobile, setIsMobile] = useState(false);
+  const [isLowPowerDevice, setIsLowPowerDevice] = useState(() => {
+    if (typeof window === 'undefined') return true;
+    const isMobileSize = window.innerWidth < 1024;
+    const isLowCPU = typeof navigator !== 'undefined' && navigator.hardwareConcurrency && navigator.hardwareConcurrency <= 4;
+    return isMobileSize || isLowCPU;
+  });
 
   useEffect(() => {
-    const checkMobile = () => {
-      setIsMobile(window.innerWidth < 1024);
+    const checkSpecs = () => {
+      const isMobileSize = window.innerWidth < 1024;
+      const isLowCPU = typeof navigator !== 'undefined' && navigator.hardwareConcurrency && navigator.hardwareConcurrency <= 4;
+      setIsLowPowerDevice(isMobileSize || isLowCPU);
     };
-    checkMobile();
-    window.addEventListener('resize', checkMobile);
-    return () => window.removeEventListener('resize', checkMobile);
+    window.addEventListener('resize', checkSpecs);
+    return () => window.removeEventListener('resize', checkSpecs);
   }, []);
 
   useEffect(() => {
-    if (isMobile) return;
+    if (isLowPowerDevice) return;
     if (!containerRef.current) return;
 
     const container = containerRef.current;
@@ -136,9 +142,9 @@ const ThreeDModel = () => {
         container.removeChild(renderer.domElement);
       }
     };
-  }, [isMobile]);
+  }, [isLowPowerDevice]);
 
-  if (isMobile) {
+  if (isLowPowerDevice) {
     return (
       <div className="mobile-gold-blob-container">
         <div className="mobile-gold-blob"></div>

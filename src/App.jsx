@@ -75,18 +75,60 @@ function AppContent() {
   useEffect(() => {
     const checkGlobalCacheVersion = async () => {
       try {
+        // 1. Detect if storage is restricted or disabled
+        let storageAvailable = false;
+        try {
+          const testKey = '__wajd_test_store__';
+          localStorage.setItem(testKey, '1');
+          storageAvailable = localStorage.getItem(testKey) === '1';
+          localStorage.removeItem(testKey);
+        } catch (e) {
+          storageAvailable = false;
+        }
+
+        let sessionStorageAvailable = false;
+        try {
+          const testKey = '__wajd_session_test__';
+          sessionStorage.setItem(testKey, '1');
+          sessionStorageAvailable = sessionStorage.getItem(testKey) === '1';
+          sessionStorage.removeItem(testKey);
+        } catch (e) {
+          sessionStorageAvailable = false;
+        }
+
+        if (!storageAvailable || !sessionStorageAvailable) {
+          console.warn('Storage is not fully available. Skipping cache reset check to prevent loop.');
+          return;
+        }
+
+        // 2. Prevent reload loop using sessionStorage reload counter
+        const RELOAD_COUNT_KEY = 'wajd_reload_count';
+        const reloadCountStr = sessionStorage.getItem(RELOAD_COUNT_KEY);
+        const reloadCount = reloadCountStr ? parseInt(reloadCountStr, 10) : 0;
+        const MAX_RELOADS = 1;
+
+        if (reloadCount >= MAX_RELOADS) {
+          console.warn('Maximum reload count reached. Skipping cache reset check to prevent loop.');
+          return;
+        }
+
         const settings = await api.settings.get().catch(() => null);
         if (settings && settings.updated_at) {
           const serverVersion = settings.updated_at;
           const localVersion = localStorage.getItem('wajd_global_cache_version');
 
           if (localVersion && localVersion !== serverVersion) {
-            // A remote cache purge was triggered!
-            
+            // Increment reload counter before reloading
+            sessionStorage.setItem(RELOAD_COUNT_KEY, (reloadCount + 1).toString());
+
             // 1. Clear Cache Storage (Service Worker assets)
             if (window.caches) {
-              const cacheNames = await caches.keys();
-              await Promise.all(cacheNames.map(name => caches.delete(name)));
+              try {
+                const cacheNames = await caches.keys();
+                await Promise.all(cacheNames.map(name => caches.delete(name)));
+              } catch (cacheErr) {
+                console.warn('Failed to clear cache storage:', cacheErr);
+              }
             }
 
             // 2. Clear localStorage selectively (MUST retain Supabase auth session keys)
@@ -99,14 +141,22 @@ function AppContent() {
             }
             localStorage.clear();
             
-            // Set version BEFORE reload to prevent loop
+            // Set version BEFORE reload
             localStorage.setItem('wajd_global_cache_version', serverVersion);
             
             // Restore session
             keptKeys.forEach(item => localStorage.setItem(item.key, item.value));
 
-            // 3. Clear sessionStorage
+            // 3. Clear sessionStorage selectively (protect reload counter)
+            const keptSessionKeys = [];
+            for (let i = 0; i < sessionStorage.length; i++) {
+              const key = sessionStorage.key(i);
+              if (key === RELOAD_COUNT_KEY) {
+                keptSessionKeys.push({ key, value: sessionStorage.getItem(key) });
+              }
+            }
             sessionStorage.clear();
+            keptSessionKeys.forEach(item => sessionStorage.setItem(item.key, item.value));
 
             // Force reload to pull all files fresh
             window.location.reload();

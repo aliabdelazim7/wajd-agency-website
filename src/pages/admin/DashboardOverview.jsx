@@ -15,6 +15,7 @@ import {
 import { api } from '../../services/api';
 import { audioManager } from '../../utils/audioManager';
 import LeadsChart from '../../components/LeadsChart';
+import TrafficChart from '../../components/TrafficChart';
 
 const DashboardOverview = () => {
   const [activeTab, setActiveTab] = useState('leads'); // 'leads' | 'traffic'
@@ -31,8 +32,6 @@ const DashboardOverview = () => {
   const [trendData, setTrendData] = useState([]);
   const [serviceData, setServiceData] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [hoveredPoint, setHoveredPoint] = useState(null);
-  const [hoveredTrafficPoint, setHoveredTrafficPoint] = useState(null);
   const navigate = useNavigate();
 
   const [trafficStats, setTrafficStats] = useState({
@@ -245,19 +244,7 @@ const DashboardOverview = () => {
     { label: 'شهادات آراء الشركاء', value: metrics.testimonialsCount, icon: Award, color: '#3b82f6', link: '/admin/testimonials' },
   ];
 
-  // SVG Traffic Line Chart calculations
-  const maxTrafficTrendVal = Math.max(...trafficStats.trend.map(d => d.count), 4);
-  const trafficPoints = trafficStats.trend.map((d, i) => {
-    const x = 40 + i * (420 / 14);
-    const y = 165 - (d.count / maxTrafficTrendVal) * 125;
-    return { x, y, ...d, index: i };
-  });
-
-  const trafficLineD = trafficPoints.reduce((acc, p, i) => {
-    return acc + `${i === 0 ? 'M' : 'L'} ${p.x} ${p.y}`;
-  }, '');
-
-  const trafficFillD = trafficLineD ? `${trafficLineD} L ${trafficPoints[trafficPoints.length - 1].x} 165 L ${trafficPoints[0].x} 165 Z` : '';
+  // Calculations for traffic line chart are handled internally in TrafficChart component
 
   const formatDuration = (secs) => {
     const m = Math.floor(secs / 60);
@@ -580,84 +567,7 @@ const DashboardOverview = () => {
           </div>
 
           {/* Traffic Daily chart */}
-          <div className="contact-container" style={{ padding: '30px', borderRadius: '24px', position: 'relative' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '20px' }}>
-              <TrendingUp size={20} color="var(--gold)" />
-              <h3 style={{ fontSize: '18px', color: 'var(--text-light)', margin: 0, fontWeight: 700 }}>
-                معدل تصفح الصفحات اليومي (آخر 15 يوماً)
-              </h3>
-            </div>
-            <div style={{ position: 'relative', height: '200px' }}>
-              <svg width="500" height="200" viewBox="0 0 500 200" style={{ overflow: 'visible' }}>
-                <defs>
-                  <linearGradient id="traffic-chart-gradient" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#22c55e" stopOpacity="0.6" />
-                    <stop offset="100%" stopColor="#22c55e" stopOpacity="0.00" />
-                  </linearGradient>
-                </defs>
-
-                {/* Grid Lines */}
-                <line x1="40" y1="165" x2="460" y2="165" stroke="rgba(255,255,255,0.05)" strokeWidth="1" />
-                <line x1="40" y1="123" x2="460" y2="123" stroke="rgba(255,255,255,0.03)" strokeWidth="1" />
-                <line x1="40" y1="81" x2="460" y2="81" stroke="rgba(255,255,255,0.03)" strokeWidth="1" />
-                <line x1="40" y1="40" x2="460" y2="40" stroke="rgba(255,255,255,0.03)" strokeWidth="1" />
-
-                {/* Line & Area */}
-                {trafficFillD && <path d={trafficFillD} fill="url(#traffic-chart-gradient)" />}
-                {trafficLineD && <path d={trafficLineD} fill="none" stroke="#22c55e" strokeWidth="2.5" strokeLinecap="round" />}
-
-                {/* Data Points */}
-                {trafficPoints.map((p, i) => (
-                  <g key={i}>
-                    <circle 
-                      cx={p.x} 
-                      cy={p.y} 
-                      r={hoveredTrafficPoint?.index === i ? "6" : "4"} 
-                      fill="var(--bg-dark)" 
-                      stroke="#22c55e" 
-                      strokeWidth="2"
-                      style={{ cursor: 'pointer', transition: 'all 0.2s' }}
-                      onMouseEnter={() => { handleHover(); setHoveredTrafficPoint(p); }}
-                      onMouseLeave={() => setHoveredTrafficPoint(null)}
-                    />
-                  </g>
-                ))}
-
-                {/* X Axis Labels */}
-                <text x="40" y="188" fill="var(--text-muted)" fontSize="10" textAnchor="middle" fontFamily="var(--font-ar)">
-                  {trafficStats.trend[0]?.date}
-                </text>
-                <text x="250" y="188" fill="var(--text-muted)" fontSize="10" textAnchor="middle" fontFamily="var(--font-ar)">
-                  {trafficStats.trend[7]?.date}
-                </text>
-                <text x="460" y="188" fill="var(--text-muted)" fontSize="10" textAnchor="middle" fontFamily="var(--font-ar)">
-                  {trafficStats.trend[14]?.date}
-                </text>
-              </svg>
-
-              {/* Simple HTML Tooltip */}
-              {hoveredTrafficPoint && (
-                <div style={{
-                  position: 'absolute',
-                  top: `${hoveredTrafficPoint.y - 45}px`,
-                  left: `calc(${(hoveredTrafficPoint.x - 40) / 4.2}% + 10px)`,
-                  background: 'var(--bg-card)',
-                  border: '1px solid #22c55e',
-                  borderRadius: '8px',
-                  padding: '4px 10px',
-                  fontSize: '11px',
-                  color: 'var(--text-light)',
-                  pointerEvents: 'none',
-                  zIndex: 10,
-                  boxShadow: '0 4px 15px rgba(0,0,0,0.5)',
-                  whiteSpace: 'nowrap',
-                  direction: 'rtl'
-                }}>
-                  <strong>{hoveredTrafficPoint.date}:</strong> {hoveredTrafficPoint.count} زيارة
-                </div>
-              )}
-            </div>
-          </div>
+          <TrafficChart trendData={trafficStats.trend} />
           
 
           <div style={{

@@ -1,6 +1,25 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 
 function GrainOverlay() {
+  const [isLowPower, setIsLowPower] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    const isMobileSize = window.innerWidth < 1024;
+    const isLowCPU = typeof navigator !== 'undefined' && navigator.hardwareConcurrency && navigator.hardwareConcurrency <= 4;
+    return isMobileSize || isLowCPU;
+  });
+
+  useEffect(() => {
+    const checkSpecs = () => {
+      const isMobileSize = window.innerWidth < 1024;
+      const isLowCPU = typeof navigator !== 'undefined' && navigator.hardwareConcurrency && navigator.hardwareConcurrency <= 4;
+      setIsLowPower(isMobileSize || isLowCPU);
+    };
+    window.addEventListener('resize', checkSpecs);
+    return () => window.removeEventListener('resize', checkSpecs);
+  }, []);
+
+  if (isLowPower) return null;
+
   return (
     <div className="grain-overlay" aria-hidden="true">
       <svg width="0" height="0" style={{ position: 'absolute' }}>
