@@ -102,13 +102,22 @@ const Portfolio = () => {
               }
             }
 
+            // Resolve local bundled assets if database has raw /src/assets paths
+            let finalImage = p.image_url;
+            if (p.image_url && p.image_url.startsWith('/src/assets/')) {
+              const localMatch = PORTFOLIO_DATA.find(item => p.slug && p.slug.includes(item.id));
+              if (localMatch) {
+                finalImage = localMatch.image;
+              }
+            }
+
             return {
               id: p.slug || p.id,
               name: p.name,
               categories,
               metricNum,
               metricLabel,
-              image: p.image_url,
+              image: finalImage,
               desc: p.strategy,
               challenge: p.challenge,
               strategy: p.strategy,
