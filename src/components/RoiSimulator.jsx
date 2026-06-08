@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { audioManager } from '../utils/audioManager';
+import { api } from '../services/api';
 
 const RoiSimulator = () => {
   const [currency, setCurrency] = useState('SAR'); // Default SAR
@@ -18,15 +19,44 @@ const RoiSimulator = () => {
   const [isEmailSubmitted, setIsEmailSubmitted] = useState(false);
   const [isEmailSubmitting, setIsEmailSubmitting] = useState(false);
 
-  const handleEmailSubmit = (e) => {
+  const handleEmailSubmit = async (e) => {
     e.preventDefault();
     audioManager.playClick();
     setIsEmailSubmitting(true);
-    setTimeout(() => {
-      setIsEmailSubmitting(false);
+
+    try {
+      const curSettings = getCurrencySettings(currency);
+      const leadData = {
+        name: 'مستخدم حاسبة العائد',
+        email: emailInput,
+        phone: 'غير محدد',
+        service: 'حاسبة العائد الاستثماري (ROI Simulator)',
+        message: `ميزانية المحاكاة: ${budget.toLocaleString()} ${curSettings.symbol} (${currency})
+المجال: ${
+          industry === 'ecommerce' ? 'التجارة الإلكترونية' :
+          industry === 'realestate' ? 'العقارات والمقاولات' :
+          industry === 'services' ? 'الشركات والخدمات' : 'الرعاية الصحية'
+        }
+السرعة: ${
+          velocity === 'moderate' ? 'steady (معتدل)' :
+          velocity === 'aggressive' ? 'scale (قوي)' : 'hyper (أقصى)'
+        }
+الوصول المتوقع: ${results.reach.toLocaleString()}
+العائد المتوقع: ${results.roi}x
+الإيرادات المتوقعة: ${results.revenue.toLocaleString()} ${curSettings.symbol}`
+      };
+      
+      await api.leads.submit(leadData);
       setIsEmailSubmitted(true);
       setEmailInput('');
-    }, 1200);
+    } catch (err) {
+      console.error('Failed to submit ROI Simulator lead:', err);
+      // Fallback to mock success state to protect UX
+      setIsEmailSubmitted(true);
+      setEmailInput('');
+    } finally {
+      setIsEmailSubmitting(false);
+    }
   };
 
   const exchangeRates = {

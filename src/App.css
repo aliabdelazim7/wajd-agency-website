@@ -3314,3 +3314,286 @@ body {
   }
 }
 
+/* ==========================================================================
+   Admin Dashboard & CMS Styles (RTL & Glassmorphic)
+   ========================================================================== */
+
+.admin-layout-container {
+  display: flex;
+  min-height: 100vh;
+  width: 100vw;
+  max-width: 100%;
+  background: #030303;
+  color: #f8fafc;
+  direction: rtl;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+.admin-sidebar {
+  width: 290px;
+  min-width: 290px;
+  border-left: 1px solid rgba(255, 255, 255, 0.06);
+  background: rgba(8, 8, 8, 0.85);
+  backdrop-filter: blur(20px);
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  position: sticky;
+  top: 0;
+  right: 0;
+  padding: 35px 24px;
+  box-sizing: border-box;
+  z-index: 100;
+}
+
+.admin-sidebar-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 35px;
+}
+
+.admin-sidebar-header .logo-text {
+  font-size: 26px;
+  font-weight: 900;
+  color: var(--gold);
+  letter-spacing: 0.5px;
+  text-shadow: 0 0 15px rgba(197, 168, 98, 0.2);
+}
+
+.admin-badge {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--gold);
+  background: rgba(197, 168, 98, 0.08);
+  border: 1px solid rgba(197, 168, 98, 0.2);
+  padding: 4px 10px;
+  border-radius: 20px;
+}
+
+.admin-sidebar-menu {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 1;
+  overflow-y: auto;
+  padding-left: 4px;
+}
+
+/* Custom slim scrollbar for menu list */
+.admin-sidebar-menu::-webkit-scrollbar {
+  width: 4px;
+}
+.admin-sidebar-menu::-webkit-scrollbar-track {
+  background: transparent;
+}
+.admin-sidebar-menu::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 2px;
+}
+
+.admin-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  border-radius: 12px;
+  color: #94a3b8;
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: none;
+  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+  border: 1px solid transparent;
+}
+
+.admin-menu-item svg {
+  transition: transform 0.3s ease;
+}
+
+.admin-menu-item:hover {
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.02);
+  transform: translateX(-4px);
+}
+
+.admin-menu-item:hover svg {
+  transform: scale(1.1);
+}
+
+.admin-menu-item.active {
+  color: var(--gold);
+  background: rgba(197, 168, 98, 0.06);
+  border-color: rgba(197, 168, 98, 0.15);
+  transform: none;
+}
+
+.admin-sidebar-footer {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-top: auto;
+  padding-top: 20px;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.logout-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  border: 1px solid rgba(239, 68, 68, 0.15);
+  color: #ef4444;
+  background: rgba(239, 68, 68, 0.02);
+  transition: all 0.3s ease;
+  padding: 12px;
+  border-radius: 12px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.logout-btn:hover {
+  background: rgba(239, 68, 68, 0.08);
+  border-color: rgba(239, 68, 68, 0.35);
+  color: #f87171;
+}
+
+.back-to-site-link {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  font-size: 12px;
+  color: #64748b;
+  text-decoration: none;
+  transition: color 0.3s ease;
+  font-weight: 600;
+}
+
+.back-to-site-link:hover {
+  color: var(--gold);
+}
+
+.admin-main-panel {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+.admin-main-header {
+  height: 80px;
+  min-height: 80px;
+  padding: 0 40px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  background: rgba(10, 10, 10, 0.35);
+  backdrop-filter: blur(20px);
+  z-index: 90;
+  box-sizing: border-box;
+}
+
+.admin-section-page-title {
+  font-size: 20px;
+  font-weight: 800;
+  color: #f8fafc;
+  margin: 0;
+  letter-spacing: -0.5px;
+}
+
+.admin-user-profile {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  padding: 8px 16px;
+  border-radius: 20px;
+}
+
+.user-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #10b981;
+  box-shadow: 0 0 10px #10b981;
+}
+
+.user-name {
+  font-size: 13px;
+  font-weight: 700;
+  color: #e2e8f0;
+}
+
+.admin-page-content {
+  padding: 40px;
+  flex: 1;
+  overflow-y: auto;
+  box-sizing: border-box;
+  background: radial-gradient(circle at 50% 50%, rgba(10, 10, 10, 0) 0%, rgba(3, 3, 3, 0.6) 100%);
+}
+
+/* Scrollbar styling for main admin area */
+.admin-page-content::-webkit-scrollbar {
+  width: 6px;
+}
+.admin-page-content::-webkit-scrollbar-track {
+  background: transparent;
+}
+.admin-page-content::-webkit-scrollbar-thumb {
+  background: rgba(197, 168, 98, 0.15);
+  border-radius: 4px;
+}
+.admin-page-content::-webkit-scrollbar-thumb:hover {
+  background: rgba(197, 168, 98, 0.3);
+}
+
+.app-container.admin-mode {
+  max-height: 100vh;
+  overflow: hidden;
+}
+
+/* Spinner Rotate Keyframe */
+.spinner-icon {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@media (max-width: 1024px) {
+  .admin-sidebar {
+    width: 80px;
+    min-width: 80px;
+    padding: 35px 12px;
+  }
+  .admin-sidebar-header .logo-text,
+  .admin-badge,
+  .admin-menu-item span,
+  .logout-btn span,
+  .back-to-site-link span {
+    display: none;
+  }
+  .admin-menu-item {
+    justify-content: center;
+    padding: 12px;
+  }
+  .admin-sidebar-header {
+    justify-content: center;
+  }
+  .admin-main-header {
+    padding: 0 24px;
+  }
+  .admin-page-content {
+    padding: 24px;
+  }
+}
+
+

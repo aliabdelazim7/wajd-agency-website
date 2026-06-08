@@ -5,6 +5,7 @@ import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { Trophy, TrendingUp, Users, DollarSign, Sparkles, ArrowLeft } from 'lucide-react';
 import { audioManager } from '../utils/audioManager';
 import { PORTFOLIO_DATA, INDUSTRIES } from '../data/portfolioData';
+import { api } from '../services/api';
 
 const getCaseStudyDetails = (id) => {
   const details = {
@@ -60,6 +61,8 @@ const getCaseStudyDetails = (id) => {
 const Portfolio = () => {
   const [filter, setFilter] = useState('all');
   const [selectedProject, setSelectedProject] = useState(null);
+  const [liveProjects, setLiveProjects] = useState(PORTFOLIO_DATA);
+  const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
   // Listen to Escape key to close case study drawer
@@ -72,6 +75,68 @@ const Portfolio = () => {
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
+
+  // Fetch portfolio studies from database
+  useEffect(() => {
+    const fetchProjects = async () => {
+      try {
+        const dbProjects = await api.portfolio.getAll();
+        if (dbProjects && dbProjects.length > 0) {
+          const formatted = dbProjects.map(p => {
+            let categories = [p.category];
+            if (p.category === 'ميتا') categories.push('meta');
+            if (p.category === 'سناب') categories.push('snap');
+            if (p.category === 'سلة') categories.push('salla');
+            if (p.category === 'زد') categories.push('zid');
+            if (p.category === 'جوجل') categories.push('google');
+            if (p.category === 'تيك توك') categories.push('tiktok');
+            if (p.category === 'شوبيفاي') categories.push('shopify');
+            
+            let metricNum = '';
+            let metricLabel = '';
+            if (p.results_json && typeof p.results_json === 'object') {
+              const keys = Object.keys(p.results_json);
+              if (keys.length > 0) {
+                metricNum = p.results_json[keys[0]];
+                metricLabel = keys[0];
+              }
+            }
+
+            return {
+              id: p.slug || p.id,
+              name: p.name,
+              categories,
+              metricNum,
+              metricLabel,
+              image: p.image_url,
+              desc: p.strategy,
+              challenge: p.challenge,
+              strategy: p.strategy,
+              results_json: p.results_json,
+              isDbItem: true
+            };
+          });
+          setLiveProjects(formatted);
+        }
+      } catch (err) {
+        console.error('Error fetching database portfolio items, falling back to local files:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchProjects();
+  }, []);
+
+  // Compute active project details for the drawer
+  const activeDetails = selectedProject
+    ? selectedProject.isDbItem
+      ? {
+          challenge: selectedProject.challenge,
+          strategy: selectedProject.strategy,
+          resultsList: Object.entries(selectedProject.results_json || {}).map(([k, v]) => `${k}: ${v}`)
+        }
+      : getCaseStudyDetails(selectedProject.id)
+    : null;
 
   // Refs
   const heroRef = useRef(null);
@@ -93,10 +158,12 @@ const Portfolio = () => {
   };
 
   const filteredItems = filter === 'all'
-    ? PORTFOLIO_DATA
-    : PORTFOLIO_DATA.filter(item => item.categories.includes(filter));
+    ? liveProjects
+    : liveProjects.filter(item => item.categories.includes(filter));
 
   useEffect(() => {
+    if (loading) return;
+
     gsap.registerPlugin(ScrollTrigger);
     let timer;
     const ctx = gsap.context(() => {
@@ -302,7 +369,7 @@ const Portfolio = () => {
       clearTimeout(timer);
       ctx.revert();
     };
-  }, [filter]);
+  }, [loading, filter]);
 
   return (
     <div className="portfolio-page-wrapper">
@@ -324,8 +391,11 @@ const Portfolio = () => {
             { key: 'all', label: 'الكل' },
             { key: 'meta', label: 'ميتا' },
             { key: 'snap', label: 'سناب' },
+            { key: 'tiktok', label: 'تيك توك' },
+            { key: 'google', label: 'جوجل' },
             { key: 'salla', label: 'سلة' },
             { key: 'zid', label: 'زد' },
+            { key: 'shopify', label: 'شوبيفاي' },
           ].map(f => (
             <button
               key={f.key}
@@ -407,7 +477,13 @@ const Portfolio = () => {
                 <div className="portfolio-tag-group" style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
                   {item.categories.map(cat => (
                     <span key={cat} className="portfolio-tag">
-                      {cat === 'meta' ? 'ميتا' : cat === 'snap' ? 'سناب' : cat === 'salla' ? 'سلة' : 'زد'}
+                      {cat === 'meta' ? 'ميتا' : 
+                       cat === 'snap' ? 'سناب' : 
+                       cat === 'salla' ? 'سلة' : 
+                       cat === 'zid' ? 'زد' : 
+                       cat === 'google' ? 'جوجل' : 
+                       cat === 'tiktok' ? 'تيك توك' : 
+                       cat === 'shopify' ? 'شوبيفاي' : cat}
                     </span>
                   ))}
                 </div>
@@ -673,18 +749,18 @@ const Portfolio = () => {
             <div className="drawer-body-sections">
               <div className="drawer-section">
                 <h3>🚨 التحدي (The Challenge)</h3>
-                <p>{getCaseStudyDetails(selectedProject.id).challenge}</p>
+                <p>{activeDetails?.challenge}</p>
               </div>
 
               <div className="drawer-section">
                 <h3>💡 الاستراتيجية والأثر (Wajd Strategy)</h3>
-                <p>{getCaseStudyDetails(selectedProject.id).strategy}</p>
+                <p>{activeDetails?.strategy}</p>
               </div>
 
               <div className="drawer-section">
                 <h3>🏆 الإنجازات المحققة (Achievements)</h3>
                 <ul className="drawer-achievements-list">
-                  {getCaseStudyDetails(selectedProject.id).resultsList.map((res, i) => (
+                  {activeDetails?.resultsList.map((res, i) => (
                     <li key={`ach-${i}`}>{res}</li>
                   ))}
                 </ul>

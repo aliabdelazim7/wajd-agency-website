@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
@@ -11,16 +11,23 @@ import {
   Sparkles,
 } from 'lucide-react';
 import { audioManager } from '../utils/audioManager';
+import { api } from '../services/api';
 import {
-  statsData,
+  statsData as defaultStats,
   whyCards,
   roadmapSteps,
   platformsData,
-  testimonials,
+  testimonials as defaultTestimonials,
 } from '../data/homeData';
 
 const Home = () => {
   const navigate = useNavigate();
+
+  // Dynamic states
+  const [liveHero, setLiveHero] = useState(null);
+  const [liveStats, setLiveStats] = useState(defaultStats);
+  const [liveTestimonials, setLiveTestimonials] = useState(defaultTestimonials);
+  const [loadingData, setLoadingData] = useState(true);
 
   // Refs for GSAP animations
   const heroRef = useRef(null);
@@ -45,8 +52,31 @@ const Home = () => {
     navigate('/contact');
   };
 
-  // GSAP Animations
+  // Fetch dynamic page contents from Supabase (fallback to local if not set or fails)
   useEffect(() => {
+    const fetchLiveData = async () => {
+      try {
+        const [heroRes, statsRes, testimonialsRes] = await Promise.all([
+          api.hero.get(),
+          api.stats.getAll(),
+          api.testimonials.getAll()
+        ]);
+        if (heroRes) setLiveHero(heroRes);
+        if (statsRes && statsRes.length > 0) setLiveStats(statsRes);
+        if (testimonialsRes && testimonialsRes.length > 0) setLiveTestimonials(testimonialsRes);
+      } catch (err) {
+        console.error("Failed to load live data, falling back to local files:", err);
+      } finally {
+        setLoadingData(false);
+      }
+    };
+    fetchLiveData();
+  }, []);
+
+  // GSAP Animations - runs on mount and resets when dynamic data loading is complete
+  useEffect(() => {
+    if (loadingData) return;
+
     gsap.registerPlugin(ScrollTrigger);
 
     const ctx = gsap.context(() => {
@@ -88,7 +118,7 @@ const Home = () => {
 
       // --- Stats Counter Animation ---
       if (statsRef.current) {
-        statsData.forEach((stat, i) => {
+        liveStats.forEach((stat, i) => {
           const counterEl = counterRefs.current[i];
           if (!counterEl) return;
 
@@ -96,7 +126,7 @@ const Home = () => {
           const decimals = stat.decimals || 0;
 
           gsap.to(obj, {
-            val: stat.value,
+            val: Number(stat.value),
             duration: 2,
             ease: 'power2.out',
             scrollTrigger: {
@@ -106,7 +136,7 @@ const Home = () => {
             },
             onUpdate: () => {
               const formatted = decimals > 0 ? obj.val.toFixed(decimals) : Math.round(obj.val);
-              counterEl.textContent = `${stat.prefix}${formatted}${stat.suffix}`;
+              counterEl.textContent = `${stat.prefix || ''}${formatted}${stat.suffix || ''}`;
             },
           });
         });
@@ -257,7 +287,7 @@ const Home = () => {
       ctx.revert();
       ScrollTrigger.getAll().forEach((t) => t.kill());
     };
-  }, []);
+  }, [loadingData, liveStats]);
 
   return (
     <div className="home-page-wrapper">
@@ -278,26 +308,57 @@ const Home = () => {
             </div>
             <div className="hero-text-logo-3d">وجد</div>
             <h1 className="hero-tagline">
-              نُوجِد الأثر الرقمي الذي يتحول إلى <span>مبيعات</span>
+              {liveHero?.headline ? (
+                liveHero.headline.includes('||') ? (
+                  <>
+                    {liveHero.headline.split('||')[0]} <span>{liveHero.headline.split('||')[1]}</span>
+                  </>
+                ) : (
+                  liveHero.headline
+                )
+              ) : (
+                <>نُوجِد الأثر الرقمي الذي يتحول إلى <span>مبيعات</span></>
+              )}
             </h1>
             <p className="hero-description">
-              نصنع الأثر المالي لحملاتك الإعلانية. نحن لا نبيع إعجابات أو نطلق وعوداً عشوائية. نحن شريكك التقني والاستراتيجي في تصميم مسارات شراء ذكية تحقق أعلى عائد إعلاني (ROAS) قابل للتوسع والقياس.
+              {liveHero?.subheadline || 'نصنع الأثر المالي لحملاتك الإعلانية. نحن لا نبيع إعجابات أو نطلق وعوداً عشوائية. نحن شريكك التقني والاستراتيجي في تصميم مسارات شراء ذكية تحقق أعلى عائد إعلاني (ROAS) قابل للتوسع والقياس.'}
             </p>
             <div className="hero-ctas">
-              <a
-                href="#simulator-anchor"
-                className="action-btn filled"
-                onClick={(e) => {
-                  e.preventDefault();
-                  audioManager.playClick();
-                  document
-                    .getElementById('simulator-anchor')
-                    ?.scrollIntoView({ behavior: 'smooth' });
-                }}
-                onMouseEnter={handleHover}
-              >
-                <span>مفاعل الأثر التسويقي 🎛️</span>
-              </a>
+              {liveHero?.cta_text ? (
+                <a
+                  href={liveHero.cta_link || '#simulator-anchor'}
+                  className="action-btn filled"
+                  onClick={(e) => {
+                    if (!liveHero.cta_link || liveHero.cta_link.startsWith('#')) {
+                      e.preventDefault();
+                      audioManager.playClick();
+                      document
+                        .getElementById(liveHero.cta_link?.replace('#', '') || 'simulator-anchor')
+                        ?.scrollIntoView({ behavior: 'smooth' });
+                    } else {
+                      audioManager.playClick();
+                    }
+                  }}
+                  onMouseEnter={handleHover}
+                >
+                  <span>{liveHero.cta_text}</span>
+                </a>
+              ) : (
+                <a
+                  href="#simulator-anchor"
+                  className="action-btn filled"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    audioManager.playClick();
+                    document
+                      .getElementById('simulator-anchor')
+                      ?.scrollIntoView({ behavior: 'smooth' });
+                  }}
+                  onMouseEnter={handleHover}
+                >
+                  <span>مفاعل الأثر التسويقي 🎛️</span>
+                </a>
+              )}
               <button
                 type="button"
                 className="action-btn"
@@ -412,13 +473,13 @@ const Home = () => {
         </p>
 
         <div className="stats-grid">
-          {statsData.map((stat, i) => (
+          {liveStats.map((stat, i) => (
             <div className="stat-card" key={i} onMouseEnter={handleHover}>
               <span
                 className="stat-num"
                 ref={(el) => (counterRefs.current[i] = el)}
               >
-                {stat.prefix}0{stat.suffix}
+                {(stat.prefix || '')}0{(stat.suffix || '')}
               </span>
               <span className="stat-label">{stat.label}</span>
             </div>
@@ -521,7 +582,7 @@ const Home = () => {
         </p>
 
         <div className="testimonials-grid">
-          {testimonials.map((testimonial, i) => (
+          {liveTestimonials.map((testimonial, i) => (
             <div className="testimonial-card" key={i} onMouseEnter={handleHover}>
               <div className="testimonial-quote-icon">
                 <Quote size={32} />
@@ -532,11 +593,18 @@ const Home = () => {
                   <Star key={si} size={16} fill="currentColor" />
                 ))}
               </div>
-              <div className="testimonial-author">
-                <span className="testimonial-name">{testimonial.name}</span>
-                <span className="testimonial-company">
-                  {testimonial.company}
-                </span>
+              <div className="testimonial-author" style={{ display: 'flex', alignItems: 'center', gap: '12px', marginTop: '16px' }}>
+                {testimonial.avatar_url && (
+                  <div style={{ width: '38px', height: '38px', borderRadius: '50%', overflow: 'hidden', border: '1.5px solid var(--gold)', flexShrink: 0 }}>
+                    <img src={testimonial.avatar_url} alt={testimonial.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  </div>
+                )}
+                <div style={{ display: 'flex', flexDirection: 'column', textAlign: 'right', gap: '2px' }}>
+                  <span className="testimonial-name" style={{ margin: 0 }}>{testimonial.name}</span>
+                  <span className="testimonial-company" style={{ margin: 0 }}>
+                    {testimonial.company}
+                  </span>
+                </div>
               </div>
             </div>
           ))}
