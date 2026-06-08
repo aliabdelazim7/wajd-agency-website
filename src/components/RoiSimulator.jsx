@@ -190,11 +190,11 @@ const RoiSimulator = () => {
           {/* Currency Selection */}
           <div className="control-group">
             <label className="control-label">عملة الحساب المفضل (Currency):</label>
-            <div className="currency-selector-group" style={{ display: 'flex', gap: '10px' }}>
+            <div className="currency-selector-group">
               {[
-                { id: 'SAR', label: 'ريال سعودي (ر.س)' },
-                { id: 'EGP', label: 'جنيه مصري (ج.م)' },
-                { id: 'USD', label: 'دولار أمريكي ($)' },
+                { id: 'SAR', label: 'ريال سعودي (ر.س)', shortLabel: 'ر.س' },
+                { id: 'EGP', label: 'جنيه مصري (ج.م)', shortLabel: 'ج.م' },
+                { id: 'USD', label: 'دولار أمريكي ($)', shortLabel: '$' },
               ].map((curOpt) => (
                 <button
                   key={curOpt.id}
@@ -208,7 +208,10 @@ const RoiSimulator = () => {
                   }}
                   style={{ flex: 1, padding: '12px 10px', fontSize: '13px' }}
                 >
-                  <div className="btn-title">{curOpt.label}</div>
+                  <div className="btn-title">
+                    <span className="desktop-only">{curOpt.label}</span>
+                    <span className="mobile-only">{curOpt.shortLabel}</span>
+                  </div>
                 </button>
               ))}
             </div>

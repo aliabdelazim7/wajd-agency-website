@@ -79,8 +79,9 @@ function AppContent() {
   // Lenis smooth scroll + GSAP ScrollTrigger integration
   useEffect(() => {
     const isAdmin = location.pathname.startsWith('/admin');
+    const isMobile = window.innerWidth < 1024 || 'ontouchstart' in window || navigator.maxTouchPoints > 0;
 
-    if (isAdmin) {
+    if (isAdmin || isMobile) {
       if (lenisRef.current) {
         lenisRef.current.destroy();
         lenisRef.current = null;

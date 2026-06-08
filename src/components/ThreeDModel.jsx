@@ -1,10 +1,21 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import * as THREE from 'three';
 
 const ThreeDModel = () => {
   const containerRef = useRef(null);
+  const [isMobile, setIsMobile] = useState(false);
 
   useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 1024);
+    };
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+
+  useEffect(() => {
+    if (isMobile) return;
     if (!containerRef.current) return;
 
     const container = containerRef.current;
@@ -125,7 +136,16 @@ const ThreeDModel = () => {
         container.removeChild(renderer.domElement);
       }
     };
-  }, []);
+  }, [isMobile]);
+
+  if (isMobile) {
+    return (
+      <div className="mobile-gold-blob-container">
+        <div className="mobile-gold-blob"></div>
+        <div className="mobile-gold-blob-glow"></div>
+      </div>
+    );
+  }
 
   return (
     <div 

@@ -53,185 +53,355 @@ const About = () => {
     gsap.registerPlugin(ScrollTrigger);
 
     const ctx = gsap.context(() => {
-      // Hero animations
-      gsap.fromTo(
-        '.about-hero__title',
-        { opacity: 0, y: 60, scale: 0.95 },
-        { opacity: 1, y: 0, scale: 1, duration: 1.2, ease: 'power3.out' }
-      );
-      gsap.fromTo(
-        '.about-hero__subtitle',
-        { opacity: 0, y: 40 },
-        { opacity: 1, y: 0, duration: 1, delay: 0.3, ease: 'power3.out' }
-      );
-      gsap.fromTo(
-        '.about-hero__line',
-        { scaleX: 0 },
-        { scaleX: 1, duration: 1.2, delay: 0.5, ease: 'power2.out' }
-      );
-      gsap.fromTo(
-        '.about-hero__intro',
-        { opacity: 0, y: 30 },
-        { opacity: 1, y: 0, duration: 1, delay: 0.7, ease: 'power3.out' }
-      );
+      const mm = gsap.matchMedia();
 
-      // Story section
-      gsap.fromTo(
-        '.story-text',
-        { opacity: 0, x: 80 },
-        {
-          opacity: 1,
-          x: 0,
-          duration: 1,
-          ease: 'power3.out',
-          scrollTrigger: {
-            trigger: storyRef.current,
-            start: 'top 80%',
-            toggleActions: 'play none none reverse',
-          },
-        }
-      );
-      gsap.fromTo(
-        '.about-story__visual',
-        { opacity: 0, x: -80 },
-        {
-          opacity: 1,
-          x: 0,
-          duration: 1,
-          ease: 'power3.out',
-          scrollTrigger: {
-            trigger: storyRef.current,
-            start: 'top 80%',
-            toggleActions: 'play none none reverse',
-          },
-        }
-      );
+      // Mobile Viewports (< 1024px)
+      mm.add("(max-width: 1023px)", () => {
+        // Hero animations
+        gsap.fromTo(
+          '.about-hero__title',
+          { opacity: 0, y: 30 },
+          { opacity: 1, y: 0, duration: 0.8, ease: 'power2.out' }
+        );
+        gsap.fromTo(
+          '.about-hero__subtitle',
+          { opacity: 0, y: 20 },
+          { opacity: 1, y: 0, duration: 0.7, delay: 0.2, ease: 'power2.out' }
+        );
+        gsap.fromTo(
+          '.about-hero__line',
+          { scaleX: 0 },
+          { scaleX: 1, duration: 0.8, delay: 0.3, ease: 'power2.out' }
+        );
+        gsap.fromTo(
+          '.about-hero__intro',
+          { opacity: 0, y: 15 },
+          { opacity: 1, y: 0, duration: 0.7, delay: 0.4, ease: 'power2.out' }
+        );
 
-      // Philosophy cards
-      gsap.fromTo(
-        '.philosophy-card',
-        { opacity: 0, y: 60, scale: 0.9 },
-        {
-          opacity: 1,
-          y: 0,
-          scale: 1,
-          duration: 0.8,
-          stagger: 0.2,
-          ease: 'power3.out',
-          scrollTrigger: {
-            trigger: philosophyRef.current,
-            start: 'top 75%',
-            toggleActions: 'play none none reverse',
-          },
-        }
-      );
+        // Story section
+        gsap.fromTo(
+          '.story-text',
+          { opacity: 0, y: 20 },
+          {
+            opacity: 1,
+            y: 0,
+            duration: 0.7,
+            ease: 'power2.out',
+            scrollTrigger: {
+              trigger: storyRef.current,
+              start: 'top 92%',
+              toggleActions: 'play none none none',
+            },
+          }
+        );
+        gsap.fromTo(
+          '.about-story__visual',
+          { opacity: 0, scale: 0.95 },
+          {
+            opacity: 1,
+            scale: 1,
+            duration: 0.7,
+            ease: 'power2.out',
+            scrollTrigger: {
+              trigger: storyRef.current,
+              start: 'top 92%',
+              toggleActions: 'play none none none',
+            },
+          }
+        );
 
-      // Difference cards
-      gsap.fromTo(
-        '.comparison-card',
-        { opacity: 0, y: 40 },
-        {
-          opacity: 1,
-          y: 0,
-          duration: 0.7,
-          stagger: 0.15,
-          ease: 'power3.out',
-          scrollTrigger: {
-            trigger: differenceRef.current,
-            start: 'top 75%',
-            toggleActions: 'play none none reverse',
-          },
-        }
-      );
+        // Philosophy cards
+        gsap.fromTo(
+          '.philosophy-card',
+          { opacity: 0, y: 20 },
+          {
+            opacity: 1,
+            y: 0,
+            duration: 0.6,
+            stagger: 0.08,
+            ease: 'power2.out',
+            scrollTrigger: {
+              trigger: philosophyRef.current,
+              start: 'top 92%',
+              toggleActions: 'play none none none',
+            },
+          }
+        );
 
-      // Services cards
-      gsap.fromTo(
-        '.service-card',
-        { opacity: 0, y: 50, rotateX: 8 },
-        {
-          opacity: 1,
-          y: 0,
-          rotateX: 0,
-          duration: 0.7,
-          stagger: 0.12,
-          ease: 'power3.out',
-          scrollTrigger: {
-            trigger: servicesRef.current,
-            start: 'top 75%',
-            toggleActions: 'play none none reverse',
-          },
-        }
-      );
+        // Difference cards
+        gsap.fromTo(
+          '.comparison-card',
+          { opacity: 0, y: 20 },
+          {
+            opacity: 1,
+            y: 0,
+            duration: 0.6,
+            stagger: 0.08,
+            ease: 'power2.out',
+            scrollTrigger: {
+              trigger: differenceRef.current,
+              start: 'top 92%',
+              toggleActions: 'play none none none',
+            },
+          }
+        );
 
-      // Tech items
-      gsap.fromTo(
-        '.about-tech__item',
-        { opacity: 0, y: 40 },
-        {
-          opacity: 1,
-          y: 0,
-          duration: 0.6,
-          stagger: 0.1,
-          ease: 'power3.out',
-          scrollTrigger: {
-            trigger: techRef.current,
-            start: 'top 75%',
-            toggleActions: 'play none none reverse',
-          },
-        }
-      );
+        // Services cards
+        gsap.fromTo(
+          '.service-card',
+          { opacity: 0, y: 20 },
+          {
+            opacity: 1,
+            y: 0,
+            duration: 0.6,
+            stagger: 0.06,
+            ease: 'power2.out',
+            scrollTrigger: {
+              trigger: servicesRef.current,
+              start: 'top 92%',
+              toggleActions: 'play none none none',
+            },
+          }
+        );
 
-      // Values cards
-      gsap.fromTo(
-        '.value-card',
-        { opacity: 0, y: 50, scale: 0.92 },
-        {
-          opacity: 1,
-          y: 0,
-          scale: 1,
-          duration: 0.7,
-          stagger: 0.15,
-          ease: 'power3.out',
-          scrollTrigger: {
-            trigger: valuesRef.current,
-            start: 'top 75%',
-            toggleActions: 'play none none reverse',
-          },
-        }
-      );
+        // Tech items
+        gsap.fromTo(
+          '.about-tech__item',
+          { opacity: 0, y: 15 },
+          {
+            opacity: 1,
+            y: 0,
+            duration: 0.5,
+            stagger: 0.05,
+            ease: 'power2.out',
+            scrollTrigger: {
+              trigger: techRef.current,
+              start: 'top 92%',
+              toggleActions: 'play none none none',
+            },
+          }
+        );
 
-      // CTA section
-      gsap.fromTo(
-        '.about-cta__inner',
-        { opacity: 0, y: 60, scale: 0.95 },
-        {
-          opacity: 1,
-          y: 0,
-          scale: 1,
-          duration: 1,
-          ease: 'power3.out',
-          scrollTrigger: {
-            trigger: ctaRef.current,
-            start: 'top 80%',
-            toggleActions: 'play none none reverse',
-          },
-        }
-      );
+        // Values cards
+        gsap.fromTo(
+          '.value-card',
+          { opacity: 0, y: 20 },
+          {
+            opacity: 1,
+            y: 0,
+            duration: 0.6,
+            stagger: 0.08,
+            ease: 'power2.out',
+            scrollTrigger: {
+              trigger: valuesRef.current,
+              start: 'top 92%',
+              toggleActions: 'play none none none',
+            },
+          }
+        );
+
+        // CTA section
+        gsap.fromTo(
+          '.about-cta__inner',
+          { opacity: 0, scale: 0.96, y: 20 },
+          {
+            opacity: 1,
+            scale: 1,
+            y: 0,
+            duration: 0.7,
+            ease: 'power2.out',
+            scrollTrigger: {
+              trigger: ctaRef.current,
+              start: 'top 92%',
+              toggleActions: 'play none none none',
+            },
+          }
+        );
+      });
+
+      // Desktop Viewports (>= 1024px)
+      mm.add("(min-width: 1024px)", () => {
+        // Hero animations
+        gsap.fromTo(
+          '.about-hero__title',
+          { opacity: 0, y: 60, scale: 0.95 },
+          { opacity: 1, y: 0, scale: 1, duration: 1.2, ease: 'power3.out' }
+        );
+        gsap.fromTo(
+          '.about-hero__subtitle',
+          { opacity: 0, y: 40 },
+          { opacity: 1, y: 0, duration: 1, delay: 0.3, ease: 'power3.out' }
+        );
+        gsap.fromTo(
+          '.about-hero__line',
+          { scaleX: 0 },
+          { scaleX: 1, duration: 1.2, delay: 0.5, ease: 'power2.out' }
+        );
+        gsap.fromTo(
+          '.about-hero__intro',
+          { opacity: 0, y: 30 },
+          { opacity: 1, y: 0, duration: 1, delay: 0.7, ease: 'power3.out' }
+        );
+
+        // Story section
+        gsap.fromTo(
+          '.story-text',
+          { opacity: 0, x: 80 },
+          {
+            opacity: 1,
+            x: 0,
+            duration: 1,
+            ease: 'power3.out',
+            scrollTrigger: {
+              trigger: storyRef.current,
+              start: 'top 80%',
+              toggleActions: 'play none none reverse',
+            },
+          }
+        );
+        gsap.fromTo(
+          '.about-story__visual',
+          { opacity: 0, x: -80 },
+          {
+            opacity: 1,
+            x: 0,
+            duration: 1,
+            ease: 'power3.out',
+            scrollTrigger: {
+              trigger: storyRef.current,
+              start: 'top 80%',
+              toggleActions: 'play none none reverse',
+            },
+          }
+        );
+
+        // Philosophy cards
+        gsap.fromTo(
+          '.philosophy-card',
+          { opacity: 0, y: 60, scale: 0.9 },
+          {
+            opacity: 1,
+            y: 0,
+            scale: 1,
+            duration: 0.8,
+            stagger: 0.2,
+            ease: 'power3.out',
+            scrollTrigger: {
+              trigger: philosophyRef.current,
+              start: 'top 75%',
+              toggleActions: 'play none none reverse',
+            },
+          }
+        );
+
+        // Difference cards
+        gsap.fromTo(
+          '.comparison-card',
+          { opacity: 0, y: 40 },
+          {
+            opacity: 1,
+            y: 0,
+            duration: 0.7,
+            stagger: 0.15,
+            ease: 'power3.out',
+            scrollTrigger: {
+              trigger: differenceRef.current,
+              start: 'top 75%',
+              toggleActions: 'play none none reverse',
+            },
+          }
+        );
+
+        // Services cards
+        gsap.fromTo(
+          '.service-card',
+          { opacity: 0, y: 50, rotateX: 8 },
+          {
+            opacity: 1,
+            y: 0,
+            rotateX: 0,
+            duration: 0.7,
+            stagger: 0.12,
+            ease: 'power3.out',
+            scrollTrigger: {
+              trigger: servicesRef.current,
+              start: 'top 75%',
+              toggleActions: 'play none none reverse',
+            },
+          }
+        );
+
+        // Tech items
+        gsap.fromTo(
+          '.about-tech__item',
+          { opacity: 0, y: 40 },
+          {
+            opacity: 1,
+            y: 0,
+            duration: 0.6,
+            stagger: 0.1,
+            ease: 'power3.out',
+            scrollTrigger: {
+              trigger: techRef.current,
+              start: 'top 75%',
+              toggleActions: 'play none none reverse',
+            },
+          }
+        );
+
+        // Values cards
+        gsap.fromTo(
+          '.value-card',
+          { opacity: 0, y: 50, scale: 0.92 },
+          {
+            opacity: 1,
+            y: 0,
+            scale: 1,
+            duration: 0.7,
+            stagger: 0.15,
+            ease: 'power3.out',
+            scrollTrigger: {
+              trigger: valuesRef.current,
+              start: 'top 75%',
+              toggleActions: 'play none none reverse',
+            },
+          }
+        );
+
+        // CTA section
+        gsap.fromTo(
+          '.about-cta__inner',
+          { opacity: 0, y: 60, scale: 0.95 },
+          {
+            opacity: 1,
+            y: 0,
+            scale: 1,
+            duration: 1,
+            ease: 'power3.out',
+            scrollTrigger: {
+              trigger: ctaRef.current,
+              start: 'top 80%',
+              toggleActions: 'play none none reverse',
+            },
+          }
+        );
+      });
 
       // Section title reveals
       gsap.utils.toArray('.about-section__title').forEach((title) => {
         gsap.fromTo(
           title,
-          { opacity: 0, y: 40 },
+          { opacity: 0, y: 25 },
           {
             opacity: 1,
             y: 0,
-            duration: 0.9,
-            ease: 'power3.out',
+            duration: 0.8,
+            ease: 'power2.out',
             scrollTrigger: {
               trigger: title,
-              start: 'top 85%',
-              toggleActions: 'play none none reverse',
+              start: 'top 92%',
+              toggleActions: 'play none none none',
             },
           }
         );
@@ -240,17 +410,17 @@ const About = () => {
       gsap.utils.toArray('.about-section__subtitle').forEach((sub) => {
         gsap.fromTo(
           sub,
-          { opacity: 0, y: 25 },
+          { opacity: 0, y: 15 },
           {
             opacity: 1,
             y: 0,
-            duration: 0.8,
-            delay: 0.15,
-            ease: 'power3.out',
+            duration: 0.7,
+            delay: 0.1,
+            ease: 'power2.out',
             scrollTrigger: {
               trigger: sub,
-              start: 'top 85%',
-              toggleActions: 'play none none reverse',
+              start: 'top 92%',
+              toggleActions: 'play none none none',
             },
           }
         );

@@ -1,13 +1,25 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 
 const ParticleCanvas = ({ activeSection }) => {
   const canvasRef = useRef(null);
   const particlesRef = useRef([]);
   const mouseRef = useRef({ x: null, y: null, radius: 130 });
   const animationFrameRef = useRef(null);
+  const [isMobile, setIsMobile] = useState(false);
 
   useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 1024);
+    };
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+
+  useEffect(() => {
+    if (isMobile) return;
     const canvas = canvasRef.current;
+    if (!canvas) return;
     const ctx = canvas.getContext('2d');
 
     // Resize handler
@@ -269,6 +281,8 @@ const ParticleCanvas = ({ activeSection }) => {
       cancelAnimationFrame(animationFrameRef.current);
     };
   }, [activeSection]);
+
+  if (isMobile) return null;
 
   return (
     <canvas

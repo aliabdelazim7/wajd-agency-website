@@ -677,6 +677,11 @@ body {
 /* ═══════════════════════════════════════════════════════════════════
    9. STATS SECTION
    ═══════════════════════════════════════════════════════════════════ */
+.stats-section {
+  padding: 100px 8%;
+  position: relative;
+}
+
 .stats-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
@@ -1708,6 +1713,33 @@ body {
 
 .gold-slider::-webkit-slider-thumb:hover { transform: scale(1.25); }
 
+.slider-limits {
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-top: 6px;
+  direction: ltr;
+}
+
+.mobile-only {
+  display: none !important;
+}
+
+.desktop-only {
+  display: inline-block !important;
+}
+
+@media (max-width: 768px) {
+  .desktop-only {
+    display: none !important;
+  }
+  .mobile-only {
+    display: inline-block !important;
+  }
+}
+
 .gold-select {
   background: #111218;
   border: 1px solid var(--border-glass);
@@ -2343,6 +2375,13 @@ body {
 }
 
 @media (max-width: 768px) {
+  .stats-section, .why-section, .platforms-section, .testimonials-section {
+    padding: 50px 5% !important;
+  }
+  .roadmap-pinned-section {
+    min-height: auto !important;
+    padding: 50px 5% 30px !important;
+  }
   .why-grid {
     grid-template-columns: 1fr;
   }
@@ -3593,6 +3632,64 @@ body {
   }
   .admin-page-content {
     padding: 24px;
+  }
+}
+
+/* Mobile Liquid Gold CSS Blob Styling */
+.mobile-gold-blob-container {
+  position: relative;
+  width: 280px;
+  height: 280px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin: 0 auto;
+}
+
+.mobile-gold-blob {
+  width: 200px;
+  height: 200px;
+  background: radial-gradient(circle at 30% 30%, #ffeaa7 0%, #c5a862 50%, #8a6f3e 100%);
+  box-shadow: inset -10px -10px 20px rgba(0, 0, 0, 0.4),
+              0 0 35px rgba(197, 168, 98, 0.35);
+  border-radius: 60% 40% 30% 70% / 60% 30% 70% 40%;
+  animation: liquid-blob 8s ease-in-out infinite alternate;
+  filter: drop-shadow(0 10px 20px rgba(0, 0, 0, 0.35));
+}
+
+.mobile-gold-blob-glow {
+  position: absolute;
+  width: 240px;
+  height: 240px;
+  background: radial-gradient(circle, rgba(197, 168, 98, 0.25) 0%, transparent 70%);
+  filter: blur(15px);
+  z-index: -1;
+  animation: pulse-glow 4s ease-in-out infinite alternate;
+}
+
+@keyframes liquid-blob {
+  0% {
+    border-radius: 60% 40% 30% 70% / 60% 30% 70% 40%;
+    transform: rotate(0deg) scale(1);
+  }
+  50% {
+    border-radius: 40% 60% 70% 30% / 50% 60% 40% 50%;
+    transform: rotate(180deg) scale(1.04);
+  }
+  100% {
+    border-radius: 50% 50% 40% 60% / 60% 40% 60% 40%;
+    transform: rotate(360deg) scale(0.96);
+  }
+}
+
+@keyframes pulse-glow {
+  0% {
+    transform: scale(0.9);
+    opacity: 0.7;
+  }
+  100% {
+    transform: scale(1.15);
+    opacity: 1;
   }
 }
 

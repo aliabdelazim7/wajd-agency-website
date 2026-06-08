@@ -94,121 +94,233 @@ const Contact = () => {
   useEffect(() => {
     gsap.registerPlugin(ScrollTrigger);
     const ctx = gsap.context(() => {
+      const mm = gsap.matchMedia();
 
-      // Hero animations
-      if (heroRef.current) {
-        gsap.fromTo(heroRef.current.querySelectorAll('.contact-hero-title, .contact-hero-subtitle, .contact-hero-divider'),
-          { opacity: 0, y: 35 },
-          {
-            opacity: 1,
-            y: 0,
-            duration: 0.9,
-            stagger: 0.15,
-            ease: 'power3.out',
-            scrollTrigger: {
-              trigger: heroRef.current,
-              start: 'top 85%',
-              toggleActions: 'play none none none',
-            }
-          }
-        );
-      }
+      // Mobile
+      mm.add("(max-width: 1023px)", () => {
+        const startVal = 'top 92%';
 
-      // Form section
-      if (formRef.current) {
-        gsap.fromTo(formRef.current,
-          { opacity: 0, y: 50, scale: 0.97 },
-          {
-            opacity: 1,
-            y: 0,
-            scale: 1,
-            duration: 0.9,
-            ease: 'power3.out',
-            scrollTrigger: {
-              trigger: formRef.current,
-              start: 'top 85%',
-              toggleActions: 'play none none none',
+        if (heroRef.current) {
+          gsap.fromTo(heroRef.current.querySelectorAll('.contact-hero-title, .contact-hero-subtitle, .contact-hero-divider'),
+            { opacity: 0, y: 15 },
+            {
+              opacity: 1,
+              y: 0,
+              duration: 0.6,
+              stagger: 0.08,
+              ease: 'power2.out'
             }
-          }
-        );
-      }
+          );
+        }
 
-      // Contact channels
-      if (channelsRef.current) {
-        gsap.fromTo(channelsRef.current.querySelectorAll('.channel-card'),
-          { opacity: 0, y: 30, scale: 0.95 },
-          {
-            opacity: 1,
-            y: 0,
-            scale: 1,
-            duration: 0.6,
-            stagger: 0.12,
-            ease: 'power3.out',
-            scrollTrigger: {
-              trigger: channelsRef.current,
-              start: 'top 80%',
-              toggleActions: 'play none none none',
+        if (formRef.current) {
+          gsap.fromTo(formRef.current,
+            { opacity: 0, y: 15, scale: 0.98 },
+            {
+              opacity: 1,
+              y: 0,
+              scale: 1,
+              duration: 0.6,
+              ease: 'power2.out',
+              scrollTrigger: {
+                trigger: formRef.current,
+                start: startVal,
+                once: true,
+              }
             }
-          }
-        );
-      }
+          );
+        }
 
-      // FAQ section
-      if (faqRef.current) {
-        gsap.fromTo(faqRef.current.querySelectorAll('.faq-item'),
-          { opacity: 0, x: -30 },
-          {
-            opacity: 1,
-            x: 0,
-            duration: 0.6,
-            stagger: 0.1,
-            ease: 'power3.out',
-            scrollTrigger: {
-              trigger: faqRef.current,
-              start: 'top 80%',
-              toggleActions: 'play none none none',
+        if (channelsRef.current) {
+          gsap.fromTo(channelsRef.current.querySelectorAll('.channel-card'),
+            { opacity: 0, y: 15 },
+            {
+              opacity: 1,
+              y: 0,
+              duration: 0.5,
+              stagger: 0.08,
+              ease: 'power2.out',
+              scrollTrigger: {
+                trigger: channelsRef.current,
+                start: startVal,
+                once: true,
+              }
             }
-          }
-        );
-      }
+          );
+        }
 
-      // Process timeline
-      if (processRef.current) {
-        gsap.fromTo(processRef.current.querySelectorAll('.process-step'),
-          { opacity: 0, y: 40 },
-          {
-            opacity: 1,
-            y: 0,
-            duration: 0.7,
-            stagger: 0.15,
-            ease: 'power3.out',
-            scrollTrigger: {
-              trigger: processRef.current,
-              start: 'top 80%',
-              toggleActions: 'play none none none',
+        if (faqRef.current) {
+          gsap.fromTo(faqRef.current.querySelectorAll('.faq-item'),
+            { opacity: 0, y: 15 },
+            {
+              opacity: 1,
+              y: 0,
+              duration: 0.5,
+              stagger: 0.06,
+              ease: 'power2.out',
+              scrollTrigger: {
+                trigger: faqRef.current,
+                start: startVal,
+                once: true,
+              }
             }
-          }
-        );
-      }
+          );
+        }
 
-      // CTA
-      if (ctaRef.current) {
-        gsap.fromTo(ctaRef.current,
-          { opacity: 0, y: 40, scale: 0.96 },
-          {
-            opacity: 1,
-            y: 0,
-            scale: 1,
-            duration: 0.8,
-            ease: 'power3.out',
-            scrollTrigger: {
-              trigger: ctaRef.current,
-              start: 'top 85%',
-              toggleActions: 'play none none none',
+        if (processRef.current) {
+          gsap.fromTo(processRef.current.querySelectorAll('.process-step'),
+            { opacity: 0, y: 15 },
+            {
+              opacity: 1,
+              y: 0,
+              duration: 0.5,
+              stagger: 0.08,
+              ease: 'power2.out',
+              scrollTrigger: {
+                trigger: processRef.current,
+                start: startVal,
+                once: true,
+              }
             }
-          }
-        );
-      }
+          );
+        }
+
+        if (ctaRef.current) {
+          gsap.fromTo(ctaRef.current,
+            { opacity: 0, scale: 0.98, y: 15 },
+            {
+              opacity: 1,
+              scale: 1,
+              y: 0,
+              duration: 0.6,
+              ease: 'power2.out',
+              scrollTrigger: {
+                trigger: ctaRef.current,
+                start: startVal,
+                once: true,
+              }
+            }
+          );
+        }
+      });
+
+      // Desktop
+      mm.add("(min-width: 1024px)", () => {
+        // Hero animations
+        if (heroRef.current) {
+          gsap.fromTo(heroRef.current.querySelectorAll('.contact-hero-title, .contact-hero-subtitle, .contact-hero-divider'),
+            { opacity: 0, y: 35 },
+            {
+              opacity: 1,
+              y: 0,
+              duration: 0.9,
+              stagger: 0.15,
+              ease: 'power3.out',
+              scrollTrigger: {
+                trigger: heroRef.current,
+                start: 'top 85%',
+                toggleActions: 'play none none none',
+              }
+            }
+          );
+        }
+
+        // Form section
+        if (formRef.current) {
+          gsap.fromTo(formRef.current,
+            { opacity: 0, y: 50, scale: 0.97 },
+            {
+              opacity: 1,
+              y: 0,
+              scale: 1,
+              duration: 0.9,
+              ease: 'power3.out',
+              scrollTrigger: {
+                trigger: formRef.current,
+                start: 'top 85%',
+                toggleActions: 'play none none none',
+              }
+            }
+          );
+        }
+
+        // Contact channels
+        if (channelsRef.current) {
+          gsap.fromTo(channelsRef.current.querySelectorAll('.channel-card'),
+            { opacity: 0, y: 30, scale: 0.95 },
+            {
+              opacity: 1,
+              y: 0,
+              scale: 1,
+              duration: 0.6,
+              stagger: 0.12,
+              ease: 'power3.out',
+              scrollTrigger: {
+                trigger: channelsRef.current,
+                start: 'top 80%',
+                toggleActions: 'play none none none',
+              }
+            }
+          );
+        }
+
+        // FAQ section
+        if (faqRef.current) {
+          gsap.fromTo(faqRef.current.querySelectorAll('.faq-item'),
+            { opacity: 0, x: -30 },
+            {
+              opacity: 1,
+              x: 0,
+              duration: 0.6,
+              stagger: 0.1,
+              ease: 'power3.out',
+              scrollTrigger: {
+                trigger: faqRef.current,
+                start: 'top 80%',
+                toggleActions: 'play none none none',
+              }
+            }
+          );
+        }
+
+        // Process timeline
+        if (processRef.current) {
+          gsap.fromTo(processRef.current.querySelectorAll('.process-step'),
+            { opacity: 0, y: 40 },
+            {
+              opacity: 1,
+              y: 0,
+              duration: 0.7,
+              stagger: 0.15,
+              ease: 'power3.out',
+              scrollTrigger: {
+                trigger: processRef.current,
+                start: 'top 80%',
+                toggleActions: 'play none none none',
+              }
+            }
+          );
+        }
+
+        // CTA
+        if (ctaRef.current) {
+          gsap.fromTo(ctaRef.current,
+            { opacity: 0, y: 40, scale: 0.96 },
+            {
+              opacity: 1,
+              y: 0,
+              scale: 1,
+              duration: 0.8,
+              ease: 'power3.out',
+              scrollTrigger: {
+                trigger: ctaRef.current,
+                start: 'top 85%',
+                toggleActions: 'play none none none',
+              }
+            }
+          );
+        }
+      });
     });
 
     return () => ctx.revert();

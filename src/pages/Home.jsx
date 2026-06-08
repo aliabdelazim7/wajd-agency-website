@@ -80,102 +80,279 @@ const Home = () => {
     gsap.registerPlugin(ScrollTrigger);
 
     const ctx = gsap.context(() => {
-      // --- Hero Section Animation ---
-      if (heroRef.current) {
-        const heroTl = gsap.timeline({ delay: 0.3 });
-        heroTl
-          .from('.hero-text-logo-3d', {
+      const mm = gsap.matchMedia();
+
+      // Mobile viewports (width < 1024px)
+      mm.add("(max-width: 1023px)", () => {
+        // Hero Section Animation
+        if (heroRef.current) {
+          gsap.timeline({ delay: 0.1 })
+            .from('.hero-text-logo-3d, .hero-tagline, .hero-description, .hero-ctas', {
+              opacity: 0,
+              y: 15,
+              stagger: 0.08,
+              duration: 0.6,
+              ease: 'power2.out'
+            })
+            .from('.hero-3d-side', {
+              opacity: 0,
+              scale: 0.95,
+              duration: 0.6,
+              ease: 'power2.out'
+            }, '-=0.3');
+        }
+
+        // Stats Counters Animation
+        if (statsRef.current) {
+          liveStats.forEach((stat, i) => {
+            const counterEl = counterRefs.current[i];
+            if (!counterEl) return;
+
+            const obj = { val: 0 };
+            const decimals = stat.decimals || 0;
+
+            gsap.to(obj, {
+              val: Number(stat.value),
+              duration: 1.2,
+              ease: 'power2.out',
+              scrollTrigger: {
+                trigger: statsRef.current,
+                start: 'top 92%',
+                once: true,
+              },
+              onUpdate: () => {
+                const formatted = decimals > 0 ? obj.val.toFixed(decimals) : Math.round(obj.val);
+                counterEl.textContent = `${stat.prefix || ''}${formatted}${stat.suffix || ''}`;
+              },
+            });
+          });
+
+          gsap.from('.stat-card', {
             opacity: 0,
-            scale: 0.5,
-            duration: 1,
-            ease: 'back.out(1.7)',
-          })
-          .from('.hero-tagline', {
+            y: 15,
+            stagger: 0.08,
+            duration: 0.5,
+            ease: 'power2.out',
+            clearProps: 'all',
+            scrollTrigger: {
+              trigger: statsRef.current,
+              start: 'top 92%',
+              once: true,
+            },
+          });
+        }
+
+        // Why Wajd Cards Animation
+        if (whyRef.current) {
+          gsap.from('.why-card', {
             opacity: 0,
-            y: 40,
+            y: 15,
+            stagger: 0.06,
+            duration: 0.5,
+            ease: 'power2.out',
+            scrollTrigger: {
+              trigger: whyRef.current,
+              start: 'top 92%',
+              once: true,
+            },
+          });
+        }
+
+        // Platforms Grid Animation
+        if (platformsRef.current) {
+          gsap.from('.platform-card', {
+            opacity: 0,
+            scale: 0.95,
+            stagger: 0.05,
+            duration: 0.5,
+            ease: 'power2.out',
+            scrollTrigger: {
+              trigger: platformsRef.current,
+              start: 'top 92%',
+              once: true,
+            },
+          });
+        }
+
+        // Testimonials Animation
+        if (testimonialsRef.current) {
+          gsap.from('.testimonial-card', {
+            opacity: 0,
+            y: 15,
+            stagger: 0.08,
+            duration: 0.5,
+            ease: 'power2.out',
+            scrollTrigger: {
+              trigger: testimonialsRef.current,
+              start: 'top 92%',
+              once: true,
+            },
+          });
+        }
+
+        // Final CTA Animation
+        if (ctaRef.current) {
+          gsap.from('.cta-callout-card', {
+            opacity: 0,
+            scale: 0.95,
+            y: 15,
+            duration: 0.6,
+            ease: 'power2.out',
+            scrollTrigger: {
+              trigger: ctaRef.current,
+              start: 'top 92%',
+              once: true,
+            },
+          });
+        }
+      });
+
+      // Desktop viewports (width >= 1024px)
+      mm.add("(min-width: 1024px)", () => {
+        // --- Hero Section Animation ---
+        if (heroRef.current) {
+          const heroTl = gsap.timeline({ delay: 0.3 });
+          heroTl
+            .from('.hero-text-logo-3d', {
+              opacity: 0,
+              scale: 0.5,
+              duration: 1,
+              ease: 'back.out(1.7)',
+            })
+            .from('.hero-tagline', {
+              opacity: 0,
+              y: 40,
+              duration: 0.8,
+              ease: 'power3.out',
+            }, '-=0.4')
+            .from('.hero-description', {
+              opacity: 0,
+              y: 30,
+              duration: 0.7,
+              ease: 'power3.out',
+            }, '-=0.3')
+            .from('.hero-ctas', {
+              opacity: 0,
+              y: 20,
+              duration: 0.6,
+              ease: 'power3.out',
+            }, '-=0.2')
+            .from('.hero-3d-side', {
+              opacity: 0,
+              x: -60,
+              duration: 1,
+              ease: 'power3.out',
+            }, '-=0.8');
+        }
+
+        // --- Stats Counter Animation ---
+        if (statsRef.current) {
+          liveStats.forEach((stat, i) => {
+            const counterEl = counterRefs.current[i];
+            if (!counterEl) return;
+
+            const obj = { val: 0 };
+            const decimals = stat.decimals || 0;
+
+            gsap.to(obj, {
+              val: Number(stat.value),
+              duration: 2,
+              ease: 'power2.out',
+              scrollTrigger: {
+                trigger: statsRef.current,
+                start: 'top 80%',
+                once: true,
+              },
+              onUpdate: () => {
+                const formatted = decimals > 0 ? obj.val.toFixed(decimals) : Math.round(obj.val);
+                counterEl.textContent = `${stat.prefix || ''}${formatted}${stat.suffix || ''}`;
+              },
+            });
+          });
+
+          gsap.from('.stat-card', {
+            opacity: 0,
+            y: 50,
+            stagger: 0.15,
             duration: 0.8,
             ease: 'power3.out',
-          }, '-=0.4')
-          .from('.hero-description', {
-            opacity: 0,
-            y: 30,
-            duration: 0.7,
-            ease: 'power3.out',
-          }, '-=0.3')
-          .from('.hero-ctas', {
-            opacity: 0,
-            y: 20,
-            duration: 0.6,
-            ease: 'power3.out',
-          }, '-=0.2')
-          .from('.hero-3d-side', {
-            opacity: 0,
-            x: -60,
-            duration: 1,
-            ease: 'power3.out',
-          }, '-=0.8');
-      }
-
-      // --- Stats Counter Animation ---
-      if (statsRef.current) {
-        liveStats.forEach((stat, i) => {
-          const counterEl = counterRefs.current[i];
-          if (!counterEl) return;
-
-          const obj = { val: 0 };
-          const decimals = stat.decimals || 0;
-
-          gsap.to(obj, {
-            val: Number(stat.value),
-            duration: 2,
-            ease: 'power2.out',
+            clearProps: 'all',
             scrollTrigger: {
               trigger: statsRef.current,
               start: 'top 80%',
               once: true,
             },
-            onUpdate: () => {
-              const formatted = decimals > 0 ? obj.val.toFixed(decimals) : Math.round(obj.val);
-              counterEl.textContent = `${stat.prefix || ''}${formatted}${stat.suffix || ''}`;
+          });
+        }
+
+        // --- Why Wajd Cards Animation ---
+        if (whyRef.current) {
+          gsap.from('.why-card', {
+            opacity: 0,
+            y: 60,
+            stagger: 0.12,
+            duration: 0.7,
+            ease: 'power3.out',
+            scrollTrigger: {
+              trigger: whyRef.current,
+              start: 'top 75%',
+              once: true,
             },
           });
-        });
+        }
 
-        gsap.from('.stat-card', {
-          opacity: 0,
-          y: 50,
-          stagger: 0.15,
-          duration: 0.8,
-          ease: 'power3.out',
-          clearProps: 'all',
-          scrollTrigger: {
-            trigger: statsRef.current,
-            start: 'top 80%',
-            once: true,
-          },
-        });
-      }
+        // --- Platforms Grid Animation ---
+        if (platformsRef.current) {
+          gsap.from('.platform-card', {
+            opacity: 0,
+            scale: 0.85,
+            stagger: 0.1,
+            duration: 0.6,
+            ease: 'back.out(1.4)',
+            scrollTrigger: {
+              trigger: platformsRef.current,
+              start: 'top 75%',
+              once: true,
+            },
+          });
+        }
 
-      // --- Why Wajd Cards Animation ---
-      if (whyRef.current) {
-        gsap.from('.why-card', {
-          opacity: 0,
-          y: 60,
-          stagger: 0.12,
-          duration: 0.7,
-          ease: 'power3.out',
-          scrollTrigger: {
-            trigger: whyRef.current,
-            start: 'top 75%',
-            once: true,
-          },
-        });
-      }
+        // --- Testimonials Animation ---
+        if (testimonialsRef.current) {
+          gsap.from('.testimonial-card', {
+            opacity: 0,
+            y: 50,
+            stagger: 0.2,
+            duration: 0.8,
+            ease: 'power3.out',
+            scrollTrigger: {
+              trigger: testimonialsRef.current,
+              start: 'top 80%',
+              once: true,
+            },
+          });
+        }
+
+        // --- Final CTA Animation ---
+        if (ctaRef.current) {
+          gsap.from('.cta-callout-card', {
+            opacity: 0,
+            scale: 0.9,
+            y: 40,
+            duration: 1,
+            ease: 'power3.out',
+            scrollTrigger: {
+              trigger: ctaRef.current,
+              start: 'top 85%',
+              once: true,
+            },
+          });
+        }
+      });
 
       // --- Roadmap Pinned Scroll Section ---
       if (roadmapRef.current && roadmapPanelRef.current) {
         const steps = roadmapPanelRef.current.querySelectorAll('.roadmap-step-pinned');
-        const mm = gsap.matchMedia();
 
         // Desktop breakpoint
         mm.add("(min-width: 769px)", () => {
@@ -224,60 +401,12 @@ const Home = () => {
                 ease: 'power2.out',
                 scrollTrigger: {
                   trigger: step,
-                  start: 'top 85%',
+                  start: 'top 92%',
                   toggleActions: 'play none none none',
                 }
               }
             );
           });
-        });
-      }
-
-      // --- Platforms Grid Animation ---
-      if (platformsRef.current) {
-        gsap.from('.platform-card', {
-          opacity: 0,
-          scale: 0.85,
-          stagger: 0.1,
-          duration: 0.6,
-          ease: 'back.out(1.4)',
-          scrollTrigger: {
-            trigger: platformsRef.current,
-            start: 'top 75%',
-            once: true,
-          },
-        });
-      }
-
-      // --- Testimonials Animation ---
-      if (testimonialsRef.current) {
-        gsap.from('.testimonial-card', {
-          opacity: 0,
-          y: 50,
-          stagger: 0.2,
-          duration: 0.8,
-          ease: 'power3.out',
-          scrollTrigger: {
-            trigger: testimonialsRef.current,
-            start: 'top 80%',
-            once: true,
-          },
-        });
-      }
-
-      // --- Final CTA Animation ---
-      if (ctaRef.current) {
-        gsap.from('.cta-callout-card', {
-          opacity: 0,
-          scale: 0.9,
-          y: 40,
-          duration: 1,
-          ease: 'power3.out',
-          scrollTrigger: {
-            trigger: ctaRef.current,
-            start: 'top 85%',
-            once: true,
-          },
         });
       }
     });
