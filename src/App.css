@@ -3693,4 +3693,15 @@ body {
   }
 }
 
+/* Force body and html height auto and allow scrolling natively on mobile when Lenis is inactive */
+@media (max-width: 1023px) {
+  html, body {
+    height: auto !important;
+    min-height: 100vh !important;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+  }
+}
+
+
 

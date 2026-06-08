@@ -171,8 +171,6 @@ const Portfolio = () => {
     : liveProjects.filter(item => item.categories.includes(filter));
 
   useEffect(() => {
-    if (loading) return;
-
     gsap.registerPlugin(ScrollTrigger);
     let timer;
     const ctx = gsap.context(() => {
@@ -262,31 +260,13 @@ const Portfolio = () => {
 
           // Mobile breakpoint
           mm.add("(max-width: 768px)", () => {
-            // Reset transforms
+            // Reset transforms and keep elements visible instantly
             gsap.set(container, { x: 0 });
             if (progressRef.current) {
               progressRef.current.style.width = '100%';
             }
-
-            // Simple reveal for cards on mobile
             const cards = container.querySelectorAll('.horizontal-project-card');
-            cards.forEach((card, i) => {
-              gsap.fromTo(card,
-                { opacity: 0, scale: 0.95, y: 20 },
-                {
-                  opacity: 1,
-                  scale: 1,
-                  y: 0,
-                  duration: 0.5,
-                  delay: i * 0.05,
-                  scrollTrigger: {
-                    trigger: card,
-                    start: 'top 85%',
-                    toggleActions: 'play none none none',
-                  }
-                }
-              );
-            });
+            gsap.set(cards, { opacity: 1, scale: 1, y: 0 });
           });
         }, 100);
       }
@@ -372,6 +352,10 @@ const Portfolio = () => {
           }
         );
       }
+      // Recalculate ScrollTrigger offsets after layout renders
+      setTimeout(() => {
+        ScrollTrigger.refresh();
+      }, 300);
     });
 
     return () => {

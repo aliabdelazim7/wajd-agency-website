@@ -75,8 +75,6 @@ const Home = () => {
 
   // GSAP Animations - runs on mount and resets when dynamic data loading is complete
   useEffect(() => {
-    if (loadingData) return;
-
     gsap.registerPlugin(ScrollTrigger);
 
     const ctx = gsap.context(() => {
@@ -84,7 +82,7 @@ const Home = () => {
 
       // Mobile viewports (width < 1024px)
       mm.add("(max-width: 1023px)", () => {
-        // Hero Section Animation
+        // Hero Section Animation (run instantly on load, no ScrollTrigger)
         if (heroRef.current) {
           gsap.timeline({ delay: 0.1 })
             .from('.hero-text-logo-3d, .hero-tagline, .hero-description, .hero-ctas', {
@@ -102,7 +100,7 @@ const Home = () => {
             }, '-=0.3');
         }
 
-        // Stats Counters Animation
+        // Stats Counters Animation (text value increment only, keep cards visible)
         if (statsRef.current) {
           liveStats.forEach((stat, i) => {
             const counterEl = counterRefs.current[i];
@@ -117,7 +115,7 @@ const Home = () => {
               ease: 'power2.out',
               scrollTrigger: {
                 trigger: statsRef.current,
-                start: 'top 92%',
+                start: 'top 95%',
                 once: true,
               },
               onUpdate: () => {
@@ -125,84 +123,6 @@ const Home = () => {
                 counterEl.textContent = `${stat.prefix || ''}${formatted}${stat.suffix || ''}`;
               },
             });
-          });
-
-          gsap.from('.stat-card', {
-            opacity: 0,
-            y: 15,
-            stagger: 0.08,
-            duration: 0.5,
-            ease: 'power2.out',
-            clearProps: 'all',
-            scrollTrigger: {
-              trigger: statsRef.current,
-              start: 'top 92%',
-              once: true,
-            },
-          });
-        }
-
-        // Why Wajd Cards Animation
-        if (whyRef.current) {
-          gsap.from('.why-card', {
-            opacity: 0,
-            y: 15,
-            stagger: 0.06,
-            duration: 0.5,
-            ease: 'power2.out',
-            scrollTrigger: {
-              trigger: whyRef.current,
-              start: 'top 92%',
-              once: true,
-            },
-          });
-        }
-
-        // Platforms Grid Animation
-        if (platformsRef.current) {
-          gsap.from('.platform-card', {
-            opacity: 0,
-            scale: 0.95,
-            stagger: 0.05,
-            duration: 0.5,
-            ease: 'power2.out',
-            scrollTrigger: {
-              trigger: platformsRef.current,
-              start: 'top 92%',
-              once: true,
-            },
-          });
-        }
-
-        // Testimonials Animation
-        if (testimonialsRef.current) {
-          gsap.from('.testimonial-card', {
-            opacity: 0,
-            y: 15,
-            stagger: 0.08,
-            duration: 0.5,
-            ease: 'power2.out',
-            scrollTrigger: {
-              trigger: testimonialsRef.current,
-              start: 'top 92%',
-              once: true,
-            },
-          });
-        }
-
-        // Final CTA Animation
-        if (ctaRef.current) {
-          gsap.from('.cta-callout-card', {
-            opacity: 0,
-            scale: 0.95,
-            y: 15,
-            duration: 0.6,
-            ease: 'power2.out',
-            scrollTrigger: {
-              trigger: ctaRef.current,
-              start: 'top 92%',
-              once: true,
-            },
           });
         }
       });
@@ -389,26 +309,17 @@ const Home = () => {
           });
         });
 
-        // Mobile breakpoint
+        // Mobile breakpoint (keep steps visible and don't animate opacity on mobile)
         mm.add("(max-width: 768px)", () => {
-          steps.forEach((step) => {
-            gsap.fromTo(step,
-              { opacity: 0, y: 30 },
-              {
-                opacity: 1,
-                y: 0,
-                duration: 0.6,
-                ease: 'power2.out',
-                scrollTrigger: {
-                  trigger: step,
-                  start: 'top 92%',
-                  toggleActions: 'play none none none',
-                }
-              }
-            );
-          });
+          // No animations, keep native flow visible instantly
+          gsap.set(steps, { opacity: 1, y: 0 });
         });
       }
+
+      // Refresh ScrollTrigger to recalculate layout positions after rendering
+      setTimeout(() => {
+        ScrollTrigger.refresh();
+      }, 300);
     });
 
     // Cleanup

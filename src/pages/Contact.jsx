@@ -98,8 +98,6 @@ const Contact = () => {
 
       // Mobile
       mm.add("(max-width: 1023px)", () => {
-        const startVal = 'top 92%';
-
         if (heroRef.current) {
           gsap.fromTo(heroRef.current.querySelectorAll('.contact-hero-title, .contact-hero-subtitle, .contact-hero-divider'),
             { opacity: 0, y: 15 },
@@ -109,96 +107,6 @@ const Contact = () => {
               duration: 0.6,
               stagger: 0.08,
               ease: 'power2.out'
-            }
-          );
-        }
-
-        if (formRef.current) {
-          gsap.fromTo(formRef.current,
-            { opacity: 0, y: 15, scale: 0.98 },
-            {
-              opacity: 1,
-              y: 0,
-              scale: 1,
-              duration: 0.6,
-              ease: 'power2.out',
-              scrollTrigger: {
-                trigger: formRef.current,
-                start: startVal,
-                once: true,
-              }
-            }
-          );
-        }
-
-        if (channelsRef.current) {
-          gsap.fromTo(channelsRef.current.querySelectorAll('.channel-card'),
-            { opacity: 0, y: 15 },
-            {
-              opacity: 1,
-              y: 0,
-              duration: 0.5,
-              stagger: 0.08,
-              ease: 'power2.out',
-              scrollTrigger: {
-                trigger: channelsRef.current,
-                start: startVal,
-                once: true,
-              }
-            }
-          );
-        }
-
-        if (faqRef.current) {
-          gsap.fromTo(faqRef.current.querySelectorAll('.faq-item'),
-            { opacity: 0, y: 15 },
-            {
-              opacity: 1,
-              y: 0,
-              duration: 0.5,
-              stagger: 0.06,
-              ease: 'power2.out',
-              scrollTrigger: {
-                trigger: faqRef.current,
-                start: startVal,
-                once: true,
-              }
-            }
-          );
-        }
-
-        if (processRef.current) {
-          gsap.fromTo(processRef.current.querySelectorAll('.process-step'),
-            { opacity: 0, y: 15 },
-            {
-              opacity: 1,
-              y: 0,
-              duration: 0.5,
-              stagger: 0.08,
-              ease: 'power2.out',
-              scrollTrigger: {
-                trigger: processRef.current,
-                start: startVal,
-                once: true,
-              }
-            }
-          );
-        }
-
-        if (ctaRef.current) {
-          gsap.fromTo(ctaRef.current,
-            { opacity: 0, scale: 0.98, y: 15 },
-            {
-              opacity: 1,
-              scale: 1,
-              y: 0,
-              duration: 0.6,
-              ease: 'power2.out',
-              scrollTrigger: {
-                trigger: ctaRef.current,
-                start: startVal,
-                once: true,
-              }
             }
           );
         }

@@ -57,7 +57,7 @@ const About = () => {
 
       // Mobile Viewports (< 1024px)
       mm.add("(max-width: 1023px)", () => {
-        // Hero animations
+        // Hero animations (run immediately on load, no ScrollTrigger)
         gsap.fromTo(
           '.about-hero__title',
           { opacity: 0, y: 30 },
@@ -77,146 +77,6 @@ const About = () => {
           '.about-hero__intro',
           { opacity: 0, y: 15 },
           { opacity: 1, y: 0, duration: 0.7, delay: 0.4, ease: 'power2.out' }
-        );
-
-        // Story section
-        gsap.fromTo(
-          '.story-text',
-          { opacity: 0, y: 20 },
-          {
-            opacity: 1,
-            y: 0,
-            duration: 0.7,
-            ease: 'power2.out',
-            scrollTrigger: {
-              trigger: storyRef.current,
-              start: 'top 92%',
-              toggleActions: 'play none none none',
-            },
-          }
-        );
-        gsap.fromTo(
-          '.about-story__visual',
-          { opacity: 0, scale: 0.95 },
-          {
-            opacity: 1,
-            scale: 1,
-            duration: 0.7,
-            ease: 'power2.out',
-            scrollTrigger: {
-              trigger: storyRef.current,
-              start: 'top 92%',
-              toggleActions: 'play none none none',
-            },
-          }
-        );
-
-        // Philosophy cards
-        gsap.fromTo(
-          '.philosophy-card',
-          { opacity: 0, y: 20 },
-          {
-            opacity: 1,
-            y: 0,
-            duration: 0.6,
-            stagger: 0.08,
-            ease: 'power2.out',
-            scrollTrigger: {
-              trigger: philosophyRef.current,
-              start: 'top 92%',
-              toggleActions: 'play none none none',
-            },
-          }
-        );
-
-        // Difference cards
-        gsap.fromTo(
-          '.comparison-card',
-          { opacity: 0, y: 20 },
-          {
-            opacity: 1,
-            y: 0,
-            duration: 0.6,
-            stagger: 0.08,
-            ease: 'power2.out',
-            scrollTrigger: {
-              trigger: differenceRef.current,
-              start: 'top 92%',
-              toggleActions: 'play none none none',
-            },
-          }
-        );
-
-        // Services cards
-        gsap.fromTo(
-          '.service-card',
-          { opacity: 0, y: 20 },
-          {
-            opacity: 1,
-            y: 0,
-            duration: 0.6,
-            stagger: 0.06,
-            ease: 'power2.out',
-            scrollTrigger: {
-              trigger: servicesRef.current,
-              start: 'top 92%',
-              toggleActions: 'play none none none',
-            },
-          }
-        );
-
-        // Tech items
-        gsap.fromTo(
-          '.about-tech__item',
-          { opacity: 0, y: 15 },
-          {
-            opacity: 1,
-            y: 0,
-            duration: 0.5,
-            stagger: 0.05,
-            ease: 'power2.out',
-            scrollTrigger: {
-              trigger: techRef.current,
-              start: 'top 92%',
-              toggleActions: 'play none none none',
-            },
-          }
-        );
-
-        // Values cards
-        gsap.fromTo(
-          '.value-card',
-          { opacity: 0, y: 20 },
-          {
-            opacity: 1,
-            y: 0,
-            duration: 0.6,
-            stagger: 0.08,
-            ease: 'power2.out',
-            scrollTrigger: {
-              trigger: valuesRef.current,
-              start: 'top 92%',
-              toggleActions: 'play none none none',
-            },
-          }
-        );
-
-        // CTA section
-        gsap.fromTo(
-          '.about-cta__inner',
-          { opacity: 0, scale: 0.96, y: 20 },
-          {
-            opacity: 1,
-            scale: 1,
-            y: 0,
-            duration: 0.7,
-            ease: 'power2.out',
-            scrollTrigger: {
-              trigger: ctaRef.current,
-              start: 'top 92%',
-              toggleActions: 'play none none none',
-            },
-          }
         );
       });
 
@@ -425,6 +285,11 @@ const About = () => {
           }
         );
       });
+
+      // Recalculate ScrollTrigger offsets after layout renders
+      setTimeout(() => {
+        ScrollTrigger.refresh();
+      }, 300);
     }, pageRef);
 
     return () => {
