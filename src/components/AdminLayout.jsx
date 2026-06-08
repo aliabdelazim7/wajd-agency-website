@@ -72,12 +72,19 @@ const AdminLayout = () => {
       // 3. Clear sessionStorage
       sessionStorage.clear();
 
+      // 4. Trigger global cache reset to clear all devices
+      const updatedSettings = await api.settings.triggerGlobalCacheReset().catch(err => {
+        console.warn('Failed to trigger global cache reset:', err);
+        return null;
+      });
+
+      if (updatedSettings && updatedSettings.updated_at) {
+        localStorage.setItem('wajd_global_cache_version', updatedSettings.updated_at);
+      }
+
       // Show toast
       setShowToast(true);
       setTimeout(() => setShowToast(false), 3000);
-
-      // Log action to database audits
-      await api.auditLogs.log('مسح الكاش', 'قام المشرف بتنظيف الذاكرة المؤقتة وملفات التخزين').catch(() => {});
     } catch (error) {
       console.error('Failed to purge browser cache:', error);
     } finally {

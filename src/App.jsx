@@ -71,6 +71,58 @@ function AppContent() {
   // Initialize Traffic analytics tracking
   useTrafficTracker();
 
+  // Global Remote Cache Purge Check
+  useEffect(() => {
+    const checkGlobalCacheVersion = async () => {
+      try {
+        const settings = await api.settings.get().catch(() => null);
+        if (settings && settings.updated_at) {
+          const serverVersion = settings.updated_at;
+          const localVersion = localStorage.getItem('wajd_global_cache_version');
+
+          if (localVersion && localVersion !== serverVersion) {
+            // A remote cache purge was triggered!
+            
+            // 1. Clear Cache Storage (Service Worker assets)
+            if (window.caches) {
+              const cacheNames = await caches.keys();
+              await Promise.all(cacheNames.map(name => caches.delete(name)));
+            }
+
+            // 2. Clear localStorage selectively (MUST retain Supabase auth session keys)
+            const keptKeys = [];
+            for (let i = 0; i < localStorage.length; i++) {
+              const key = localStorage.key(i);
+              if (key && (key.includes('sb-') || key.includes('supabase'))) {
+                keptKeys.push({ key, value: localStorage.getItem(key) });
+              }
+            }
+            localStorage.clear();
+            
+            // Set version BEFORE reload to prevent loop
+            localStorage.setItem('wajd_global_cache_version', serverVersion);
+            
+            // Restore session
+            keptKeys.forEach(item => localStorage.setItem(item.key, item.value));
+
+            // 3. Clear sessionStorage
+            sessionStorage.clear();
+
+            // Force reload to pull all files fresh
+            window.location.reload();
+          } else if (!localVersion) {
+            // First visit, initialize version
+            localStorage.setItem('wajd_global_cache_version', serverVersion);
+          }
+        }
+      } catch (err) {
+        console.warn('Global cache reset check failed:', err);
+      }
+    };
+
+    checkGlobalCacheVersion();
+  }, []);
+
   // Close mobile menu on route change
   useEffect(() => {
     setMobileMenuOpen(false);

@@ -162,6 +162,13 @@ const rawApi = {
       if (error) throw error;
       rawApi.auditLogs.log('تعديل الإعدادات العامة', 'تحديث بيانات الاتصال أو شبكات التواصل للموقع');
       return data;
+    },
+    async triggerGlobalCacheReset() {
+      const now = new Date().toISOString();
+      const { data, error } = await supabase.from('site_settings').update({ updated_at: now }).eq('id', 1).select().single();
+      if (error) throw error;
+      rawApi.auditLogs.log('إعادة تعيين الكاش العام', 'تم فرض تحديث ذاكرة التخزين المؤقت لجميع الأجهزة والزوار');
+      return data;
     }
   },
 
