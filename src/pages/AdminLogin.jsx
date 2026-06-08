@@ -22,7 +22,19 @@ const AdminLogin = () => {
       try {
         const session = await api.auth.getSession();
         if (session) {
-          navigate(from, { replace: true });
+          try {
+            const profile = await api.auth.getProfile(session.user.id);
+            if (profile && profile.role === 'admin') {
+              navigate(from, { replace: true });
+            } else {
+              await api.auth.logout();
+              setErrorMsg('عذراً، هذا الحساب لا يملك صلاحيات المشرف للوصول إلى لوحة التحكم.');
+            }
+          } catch (err) {
+            console.error('Check session profile error:', err);
+            await api.auth.logout();
+            setErrorMsg('فشل التحقق من صلاحيات المشرف. يرجى تسجيل الدخول مجدداً.');
+          }
         }
       } catch (err) {
         // Safe to ignore
