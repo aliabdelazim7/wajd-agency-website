@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Plus, Trash2, Edit3, Save, X, Upload, Link2 } from 'lucide-react';
 import { api } from '../../services/api';
 import { audioManager } from '../../utils/audioManager';
-import { DEFAULT_DB_PROJECTS } from '../../data/portfolioData';
+import { DEFAULT_DB_PROJECTS, PORTFOLIO_DATA } from '../../data/portfolioData';
 
 const PortfolioManager = () => {
   const [projects, setProjects] = useState([]);
@@ -25,6 +25,16 @@ const PortfolioManager = () => {
   const [feedback, setFeedback] = useState({ type: '', msg: '' });
 
   const categories = ['ميتا', 'سناب', 'سلة', 'زد', 'جوجل', 'تيك توك', 'شوبيفاي', 'لينكد إن', 'أخرى'];
+
+  const resolveImageUrl = (url, slug) => {
+    if (url && url.startsWith('/src/assets/')) {
+      const localMatch = PORTFOLIO_DATA.find(item => slug && slug.includes(item.id));
+      if (localMatch) {
+        return localMatch.image;
+      }
+    }
+    return url;
+  };
 
   const handleHover = () => {
     audioManager.playHover();
@@ -284,7 +294,7 @@ const PortfolioManager = () => {
                   <div style={{ display: 'flex', alignItems: 'center', gap: '16px', textAlign: 'right' }}>
                     {proj.thumbnail_url ? (
                       <div style={{ width: '80px', height: '60px', borderRadius: '8px', overflow: 'hidden', border: '1px solid var(--border-glass)' }}>
-                        <img src={proj.thumbnail_url} alt={proj.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                        <img src={resolveImageUrl(proj.thumbnail_url || proj.image_url, proj.slug)} alt={proj.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                       </div>
                     ) : (
                       <div style={{ width: '80px', height: '60px', borderRadius: '8px', background: 'rgba(255,255,255,0.02)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -515,7 +525,7 @@ const PortfolioManager = () => {
               </div>
               {imageUrl && (
                 <div style={{ marginTop: '10px', width: '100%', height: '150px', borderRadius: '12px', overflow: 'hidden', border: '1px solid var(--border-glass)' }}>
-                  <img src={imageUrl} alt="Project Preview" style={{ width: '100%', height: '100%', objectFit: 'contain', background: '#0a0a0a' }} />
+                  <img src={resolveImageUrl(imageUrl, slug)} alt="Project Preview" style={{ width: '100%', height: '100%', objectFit: 'contain', background: '#0a0a0a' }} />
                 </div>
               )}
             </div>
