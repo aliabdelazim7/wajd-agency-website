@@ -6,6 +6,7 @@ import { Trophy, TrendingUp, Users, DollarSign, Sparkles, ArrowLeft } from 'luci
 import { audioManager } from '../utils/audioManager';
 import { PORTFOLIO_DATA, INDUSTRIES } from '../data/portfolioData';
 import { api } from '../services/api';
+import { trackEvent } from '../utils/analytics';
 
 const getCaseStudyDetails = (id) => {
   const details = {
@@ -83,14 +84,17 @@ const Portfolio = () => {
         const dbProjects = await api.portfolio.getAll();
         if (dbProjects && dbProjects.length > 0) {
           const formatted = dbProjects.map(p => {
-            let categories = [p.category];
-            if (p.category === 'ميتا') categories.push('meta');
-            if (p.category === 'سناب') categories.push('snap');
-            if (p.category === 'سلة') categories.push('salla');
-            if (p.category === 'زد') categories.push('zid');
-            if (p.category === 'جوجل') categories.push('google');
-            if (p.category === 'تيك توك') categories.push('tiktok');
-            if (p.category === 'شوبيفاي') categories.push('shopify');
+            const categoryMap = {
+              'ميتا': 'meta',
+              'سناب': 'snap',
+              'سلة': 'salla',
+              'زد': 'zid',
+              'جوجل': 'google',
+              'تيك توك': 'tiktok',
+              'شوبيفاي': 'shopify'
+            };
+            const mapped = categoryMap[p.category] || p.category;
+            let categories = [mapped];
             
             let metricNum = '';
             let metricLabel = '';
@@ -149,9 +153,7 @@ const Portfolio = () => {
 
   // Refs
   const heroRef = useRef(null);
-  const horizontalRef = useRef(null);
   const wrapperRef = useRef(null);
-  const progressRef = useRef(null);
   const statsRef = useRef(null);
   const industriesRef = useRef(null);
   const ctaRef = useRef(null);
@@ -171,186 +173,160 @@ const Portfolio = () => {
     : liveProjects.filter(item => item.categories.includes(filter));
 
   useEffect(() => {
+    const perfMode = localStorage.getItem('wajd_performance_mode') === 'true';
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      console.log('[Accessibility] prefers-reduced-motion is enabled. Disabling GSAP animations.');
+      return;
+    }
     gsap.registerPlugin(ScrollTrigger);
-    let timer;
     const ctx = gsap.context(() => {
 
       // Hero animations
       if (heroRef.current) {
-        gsap.fromTo(heroRef.current.querySelectorAll('.portfolio-hero-title, .portfolio-hero-subtitle, .portfolio-filters'),
-          { opacity: 0, y: 40 },
-          {
-            opacity: 1,
-            y: 0,
-            duration: 1,
-            stagger: 0.2,
-            ease: 'power3.out',
-            scrollTrigger: {
-              trigger: heroRef.current,
-              start: 'top 85%',
-              toggleActions: 'play none none none',
-            }
-          }
-        );
-      }
-
-      // Horizontal scroll gallery
-      const container = horizontalRef.current;
-      const wrapper = wrapperRef.current;
-      if (container && wrapper) {
-        timer = setTimeout(() => {
-          const mm = gsap.matchMedia();
-
-          // Desktop breakpoint
-          mm.add("(min-width: 769px)", () => {
-            const initialScrollWidth = container.scrollWidth;
-            const initialViewportWidth = window.innerWidth;
-
-            if (initialScrollWidth > initialViewportWidth) {
-              const isRTL = document.documentElement.dir === 'rtl';
-              gsap.to(container, {
-                x: () => {
-                  const distance = container.scrollWidth - window.innerWidth;
-                  return isRTL ? distance : -distance;
-                },
-                ease: 'none',
-                scrollTrigger: {
-                  trigger: wrapper,
-                  start: 'top top',
-                  end: () => '+=' + (container.scrollWidth - window.innerWidth),
-                  scrub: 1,
-                  pin: true,
-                  anticipatePin: 1,
-                  invalidateOnRefresh: true,
-                  onUpdate: (self) => {
-                    if (progressRef.current) {
-                      progressRef.current.style.width = `${self.progress * 100}%`;
-                    }
-                  }
-                }
-              });
-            } else {
-              // Reset container transform and progress bar if not scrolling
-              gsap.set(container, { x: 0 });
-              if (progressRef.current) {
-                progressRef.current.style.width = '100%';
+        if (perfMode) {
+          gsap.set(heroRef.current.querySelectorAll('.portfolio-hero-title, .portfolio-hero-subtitle, .portfolio-filters'), { opacity: 1, y: 0 });
+        } else {
+          gsap.fromTo(heroRef.current.querySelectorAll('.portfolio-hero-title, .portfolio-hero-subtitle, .portfolio-filters'),
+            { opacity: 0, y: 40 },
+            {
+              opacity: 1,
+              y: 0,
+              duration: 1,
+              stagger: 0.2,
+              ease: 'power3.out',
+              scrollTrigger: {
+                trigger: heroRef.current,
+                start: 'top 85%',
+                toggleActions: 'play none none none',
               }
             }
+          );
+        }
+      }
 
-            // Animate individual cards on entry
-            const cards = container.querySelectorAll('.horizontal-project-card');
-            cards.forEach((card, i) => {
-              gsap.fromTo(card,
-                { opacity: 0, scale: 0.9, y: 30 },
-                {
-                  opacity: 1,
-                  scale: 1,
-                  y: 0,
-                  duration: 0.6,
-                  delay: i * 0.08,
-                  scrollTrigger: {
-                    trigger: wrapper,
-                    start: 'top 90%',
-                    toggleActions: 'play none none none',
-                  }
-                }
-              );
-            });
-          });
-
-          // Mobile breakpoint
-          mm.add("(max-width: 768px)", () => {
-            // Reset transforms and keep elements visible instantly
-            gsap.set(container, { x: 0 });
-            if (progressRef.current) {
-              progressRef.current.style.width = '100%';
+      // Grid cards stagger entrance on load / filter change
+      if (wrapperRef.current) {
+        const cards = wrapperRef.current.querySelectorAll('.portfolio-grid-card');
+        if (perfMode) {
+          gsap.set(cards, { opacity: 1, scale: 1, y: 0 });
+        } else {
+          gsap.fromTo(cards,
+            { opacity: 0, scale: 0.92, y: 25 },
+            {
+              opacity: 1,
+              scale: 1,
+              y: 0,
+              duration: 0.5,
+              stagger: 0.05,
+              ease: 'power2.out',
+              overwrite: 'auto'
             }
-            const cards = container.querySelectorAll('.horizontal-project-card');
-            gsap.set(cards, { opacity: 1, scale: 1, y: 0 });
-          });
-        }, 100);
+          );
+        }
       }
 
       // Stats section - counter animations
       if (statsRef.current) {
-        gsap.fromTo(statsRef.current,
-          { opacity: 0, y: 50 },
-          {
-            opacity: 1,
-            y: 0,
-            duration: 0.8,
-            scrollTrigger: {
-              trigger: statsRef.current,
-              start: 'top 80%',
-              toggleActions: 'play none none none',
-              onEnter: () => {
-                // Animate counters
-                const counters = [
-                  { target: 8, suffix: '+', idx: 0 },
-                  { target: 2.3, suffix: 'x', idx: 1, decimal: true },
-                  { target: 120, suffix: 'K+', idx: 2 },
-                  { target: 12, suffix: 'M+', idx: 3 },
-                ];
-                counters.forEach(({ target, suffix, idx, decimal }) => {
-                  const el = counterRefs.current[idx];
-                  if (el) {
-                    gsap.fromTo(el, { innerText: 0 }, {
-                      innerText: target,
-                      duration: 2,
-                      ease: 'power2.out',
-                      snap: decimal ? { innerText: 0.1 } : { innerText: 1 },
-                      onUpdate: function () {
-                        const val = decimal
-                          ? parseFloat(el.innerText).toFixed(1)
-                          : Math.round(parseFloat(el.innerText));
-                        el.innerText = val + suffix;
-                      }
-                    });
-                  }
-                });
+        if (perfMode) {
+          gsap.set(statsRef.current, { opacity: 1, y: 0 });
+          const counters = [
+            { target: 8, suffix: '+', idx: 0 },
+            { target: 2.3, suffix: 'x', idx: 1, decimal: true },
+            { target: 120, suffix: 'K+', idx: 2 },
+            { target: 12, suffix: 'M+', idx: 3 },
+          ];
+          counters.forEach(({ target, suffix, idx }) => {
+            const el = counterRefs.current[idx];
+            if (el) el.innerText = target + suffix;
+          });
+        } else {
+          gsap.fromTo(statsRef.current,
+            { opacity: 0, y: 50 },
+            {
+              opacity: 1,
+              y: 0,
+              duration: 0.8,
+              scrollTrigger: {
+                trigger: statsRef.current,
+                start: 'top 80%',
+                toggleActions: 'play none none none',
+                onEnter: () => {
+                  // Animate counters
+                  const counters = [
+                    { target: 8, suffix: '+', idx: 0 },
+                    { target: 2.3, suffix: 'x', idx: 1, decimal: true },
+                    { target: 120, suffix: 'K+', idx: 2 },
+                    { target: 12, suffix: 'M+', idx: 3 },
+                  ];
+                  counters.forEach(({ target, suffix, idx, decimal }) => {
+                    const el = counterRefs.current[idx];
+                    if (el) {
+                      gsap.fromTo(el, { innerText: 0 }, {
+                        innerText: target,
+                        duration: 2,
+                        ease: 'power2.out',
+                        snap: decimal ? { innerText: 0.1 } : { innerText: 1 },
+                        onUpdate: function () {
+                          const val = decimal
+                             ? parseFloat(el.innerText).toFixed(1)
+                             : Math.round(parseFloat(el.innerText));
+                          el.innerText = val + suffix;
+                        }
+                      });
+                    }
+                  });
+                }
               }
             }
-          }
-        );
+          );
+        }
       }
 
       // Industries grid
       if (industriesRef.current) {
-        gsap.fromTo(industriesRef.current.querySelectorAll('.industry-card'),
-          { opacity: 0, y: 30, scale: 0.95 },
-          {
-            opacity: 1,
-            y: 0,
-            scale: 1,
-            duration: 0.6,
-            stagger: 0.1,
-            ease: 'power3.out',
-            scrollTrigger: {
-              trigger: industriesRef.current,
-              start: 'top 80%',
-              toggleActions: 'play none none none',
+        if (perfMode) {
+          gsap.set(industriesRef.current.querySelectorAll('.industry-card'), { opacity: 1, y: 0, scale: 1 });
+        } else {
+          gsap.fromTo(industriesRef.current.querySelectorAll('.industry-card'),
+            { opacity: 0, y: 30, scale: 0.95 },
+            {
+              opacity: 1,
+              y: 0,
+              scale: 1,
+              duration: 0.6,
+              stagger: 0.1,
+              ease: 'power3.out',
+              scrollTrigger: {
+                trigger: industriesRef.current,
+                start: 'top 80%',
+                toggleActions: 'play none none none',
+              }
             }
-          }
-        );
+          );
+        }
       }
 
       // CTA
       if (ctaRef.current) {
-        gsap.fromTo(ctaRef.current,
-          { opacity: 0, y: 40, scale: 0.96 },
-          {
-            opacity: 1,
-            y: 0,
-            scale: 1,
-            duration: 0.8,
-            ease: 'power3.out',
-            scrollTrigger: {
-              trigger: ctaRef.current,
-              start: 'top 85%',
-              toggleActions: 'play none none none',
+        if (perfMode) {
+          gsap.set(ctaRef.current, { opacity: 1, y: 0, scale: 1 });
+        } else {
+          gsap.fromTo(ctaRef.current,
+            { opacity: 0, y: 40, scale: 0.96 },
+            {
+              opacity: 1,
+              y: 0,
+              scale: 1,
+              duration: 0.8,
+              ease: 'power3.out',
+              scrollTrigger: {
+                trigger: ctaRef.current,
+                start: 'top 85%',
+                toggleActions: 'play none none none',
+              }
             }
-          }
-        );
+          );
+        }
       }
       // Recalculate ScrollTrigger offsets after layout renders
       setTimeout(() => {
@@ -359,10 +335,30 @@ const Portfolio = () => {
     });
 
     return () => {
-      clearTimeout(timer);
       ctx.revert();
     };
   }, [loading, filter]);
+
+  // Get unique categories that actually have projects
+  const activeCategories = new Set();
+  liveProjects.forEach(item => {
+    if (item.categories) {
+      item.categories.forEach(cat => {
+        if (cat) activeCategories.add(cat);
+      });
+    }
+  });
+
+  const availableFilters = [
+    { key: 'all', label: 'الكل' },
+    { key: 'meta', label: 'ميتا' },
+    { key: 'snap', label: 'سناب' },
+    { key: 'tiktok', label: 'تيك توك' },
+    { key: 'google', label: 'جوجل' },
+    { key: 'salla', label: 'سلة' },
+    { key: 'zid', label: 'زد' },
+    { key: 'shopify', label: 'شوبيفاي' },
+  ].filter(f => f.key === 'all' || activeCategories.has(f.key));
 
   return (
     <div className="portfolio-page-wrapper">
@@ -380,16 +376,7 @@ const Portfolio = () => {
 
         {/* Filter Buttons */}
         <div className="portfolio-filters" style={{ justifyContent: 'center', marginBottom: '0' }}>
-          {[
-            { key: 'all', label: 'الكل' },
-            { key: 'meta', label: 'ميتا' },
-            { key: 'snap', label: 'سناب' },
-            { key: 'tiktok', label: 'تيك توك' },
-            { key: 'google', label: 'جوجل' },
-            { key: 'salla', label: 'سلة' },
-            { key: 'zid', label: 'زد' },
-            { key: 'shopify', label: 'شوبيفاي' },
-          ].map(f => (
+          {availableFilters.map(f => (
             <button
               key={f.key}
               type="button"
@@ -404,72 +391,48 @@ const Portfolio = () => {
       </section>
 
       {/* ═══════════════════════════════════════════════════════════ */}
-      {/* SECTION 2: Horizontal Scroll Gallery (THE STAR FEATURE) */}
+      {/* SECTION 2: Portfolio Grid Layout */}
       {/* ═══════════════════════════════════════════════════════════ */}
-      <section ref={wrapperRef} className="horizontal-scroll-wrapper" style={{ position: 'relative', overflow: 'hidden', width: '100%' }}>
-        <div
-          ref={horizontalRef}
-          className="horizontal-scroll-container"
-          style={{
-            display: 'flex',
-            flexWrap: 'nowrap',
-            gap: '35px',
-            padding: '60px 8% 100px',
-            willChange: 'transform',
-          }}
-        >
+      <section ref={wrapperRef} className="portfolio-grid-section" style={{ padding: '40px 8% 80px', width: '100%', position: 'relative' }}>
+        <div className="portfolio-grid-container">
           {filteredItems.map((item) => (
             <div
               key={item.id}
-              className="horizontal-project-card"
+              className="portfolio-grid-card"
               onMouseEnter={handleHover}
-            >
-              {/* Screenshot Image */}
-              <div style={{
-                width: '100%',
-                height: '280px',
-                overflow: 'hidden',
-                borderBottom: '1px solid var(--border-glass)',
-                background: '#000',
-                position: 'relative',
-                cursor: 'pointer',
-              }}
               onClick={() => {
                 audioManager.playClick();
                 setSelectedProject(item);
-              }}>
+                trackEvent('CaseStudyView', { project_id: item.id, project_name: item.name });
+              }}
+            >
+              {/* Image Container */}
+              <div className="portfolio-card-img-wrapper">
                 <img
                   src={item.image}
                   alt={item.name}
                   data-cursor-view="true"
-                  style={{
-                    width: '100%',
-                    height: '100%',
-                    objectFit: 'cover',
-                    objectPosition: 'top',
-                    transition: 'var(--transition-smooth)',
-                    opacity: 0.85,
-                  }}
-                  className="portfolio-brand-img"
+                  className="portfolio-grid-card-img"
                 />
-                {/* Gradient overlay */}
-                <div style={{
-                  position: 'absolute',
-                  bottom: 0,
-                  left: 0,
-                  right: 0,
-                  height: '80px',
-                  background: 'linear-gradient(to top, rgba(15,16,22,0.9), transparent)',
-                  pointerEvents: 'none',
-                }} />
+                <div className="portfolio-card-img-overlay" />
+                
+                {/* Metric Badge (Floating on image for modern CRO look) */}
+                <div className="portfolio-card-floating-badge">
+                  <span className="badge-num">{item.metricNum}</span>
+                </div>
               </div>
 
               {/* Card Content */}
-              <div style={{ padding: '24px 28px', display: 'flex', flexDirection: 'column', flexGrow: 1, gap: '16px' }}>
+              <div className="portfolio-card-details">
+                {/* Brand Name */}
+                <h3 className="portfolio-card-brand-name">
+                  {item.name}
+                </h3>
+                
                 {/* Tags */}
-                <div className="portfolio-tag-group" style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                  {item.categories.map(cat => (
-                    <span key={cat} className="portfolio-tag">
+                <div className="portfolio-card-tag-row">
+                  {item.categories.filter(Boolean).filter(cat => cat.trim() !== '').map(cat => (
+                    <span key={cat} className="portfolio-card-tag">
                       {cat === 'meta' ? 'ميتا' : 
                        cat === 'snap' ? 'سناب' : 
                        cat === 'salla' ? 'سلة' : 
@@ -481,90 +444,21 @@ const Portfolio = () => {
                   ))}
                 </div>
 
-                {/* Brand Name */}
-                <h3 style={{ fontSize: '22px', fontWeight: 700, color: 'var(--text-light)', margin: 0 }}>
-                  {item.name}
-                </h3>
-
-                {/* Metric Box */}
-                <div className="impact-metric-box" style={{
-                  background: 'rgba(0,0,0,0.35)',
-                  border: '1px dashed var(--border-glass)',
-                  borderRadius: '14px',
-                  padding: '18px',
-                  textAlign: 'center',
-                }}>
-                  <span className="impact-num" style={{
-                    fontSize: '36px',
-                    fontWeight: 700,
-                    fontFamily: 'var(--font-en)',
-                    color: 'var(--gold)',
-                    display: 'block',
-                    textShadow: '0 0 20px var(--gold-glow)',
-                  }}>
-                    {item.metricNum}
-                  </span>
-                  <span className="impact-lbl" style={{ fontSize: '13px', color: 'var(--text-muted)' }}>
-                    {item.metricLabel}
-                  </span>
-                </div>
-
                 {/* Description */}
-                <p style={{
-                  fontSize: '14px',
-                  color: 'var(--text-muted)',
-                  lineHeight: '1.7',
-                  margin: 0,
-                  flexGrow: 1,
-                }}>
+                <p className="portfolio-card-desc-text">
                   {item.desc}
                 </p>
+
+                {/* View Case Study CTA inside the card */}
+                <div className="portfolio-card-action-bar">
+                  <span className="view-case-study-btn">
+                    <span>عرض دراسة الحالة</span>
+                    <ArrowLeft size={16} className="arrow-icon" />
+                  </span>
+                </div>
               </div>
             </div>
           ))}
-        </div>
-
-        {/* Scroll Progress Bar */}
-        <div style={{
-          position: 'absolute',
-          bottom: '30px',
-          left: '8%',
-          right: '8%',
-          height: '4px',
-          background: 'rgba(197,168,98,0.1)',
-          borderRadius: '4px',
-          overflow: 'hidden',
-          zIndex: 10,
-        }}>
-          <div
-            ref={progressRef}
-            style={{
-              height: '100%',
-              width: '0%',
-              background: 'linear-gradient(90deg, var(--gold), var(--gold-light))',
-              borderRadius: '4px',
-              boxShadow: '0 0 12px var(--gold-glow)',
-              transition: 'none',
-            }}
-          />
-        </div>
-
-        {/* Scroll hint label */}
-        <div style={{
-          position: 'absolute',
-          bottom: '45px',
-          left: '50%',
-          transform: 'translateX(-50%)',
-          fontSize: '12px',
-          color: 'var(--text-muted)',
-          opacity: 0.6,
-          display: 'flex',
-          alignItems: 'center',
-          gap: '8px',
-          zIndex: 10,
-        }}>
-          <ArrowLeft size={14} />
-          <span>مرر للأسفل لتصفح المشاريع</span>
         </div>
       </section>
 

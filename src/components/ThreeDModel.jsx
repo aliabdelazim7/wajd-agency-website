@@ -102,11 +102,17 @@ const ThreeDModel = () => {
 
     window.addEventListener('resize', handleResize);
 
-    // Animation Loop
+    // Animation Loop control with IntersectionObserver
     const clock = new THREE.Clock();
-    let animationFrameId;
+    let animationFrameId = null;
+    let isVisible = true;
 
     const animate = () => {
+      if (!isVisible) {
+        animationFrameId = null;
+        return;
+      }
+
       const elapsedTime = clock.getElapsedTime();
 
       // Rotate torus knot slowly
@@ -128,11 +134,23 @@ const ThreeDModel = () => {
       animationFrameId = requestAnimationFrame(animate);
     };
 
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        isVisible = entry.isIntersecting;
+        if (isVisible && !animationFrameId) {
+          animate();
+        }
+      },
+      { threshold: 0.05 }
+    );
+    
+    observer.observe(container);
     animate();
 
     // Cleanup
     return () => {
-      cancelAnimationFrame(animationFrameId);
+      observer.disconnect();
+      if (animationFrameId) cancelAnimationFrame(animationFrameId);
       window.removeEventListener('mousemove', handleMouseMove);
       window.removeEventListener('resize', handleResize);
       renderer.dispose();

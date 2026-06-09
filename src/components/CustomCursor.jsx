@@ -1,5 +1,4 @@
-import React, { useEffect, useRef, useState, useCallback } from 'react';
-import gsap from 'gsap';
+import React, { useEffect, useRef, useState } from 'react';
 
 const TRAIL_COUNT = 4;
 const INTERACTIVE_SELECTORS = '.action-btn, .nav-link, .portfolio-card, a, button';
@@ -44,26 +43,55 @@ function CustomCursor() {
     let isHovering = false;
     let isImageHover = false;
 
+    let ringX = mousePos.current.x;
+    let ringY = mousePos.current.y;
+    let ringScale = 1;
+    let targetRingScale = 1;
+    let dotScale = 1;
+    let targetDotScale = 1;
+
+    // On-demand rendering parameters
+    let lastActiveTime = Date.now() + 3000;
+    let isLoopRunning = true;
+
+    const triggerRender = (extraTime = 0) => {
+      lastActiveTime = Math.max(lastActiveTime, Date.now() + extraTime);
+      if (!isLoopRunning) {
+        isLoopRunning = true;
+        rafId.current = requestAnimationFrame(animate);
+      }
+    };
+
     // Mouse move handler
     const onMouseMove = (e) => {
       mousePos.current = { x: e.clientX, y: e.clientY };
+      triggerRender(100);
     };
 
-    let ringX = mousePos.current.x;
-    let ringY = mousePos.current.y;
     const trailPositions = Array.from({ length: TRAIL_COUNT }, () => ({ x: mousePos.current.x, y: mousePos.current.y }));
 
     // Animate loop with requestAnimationFrame
     const animate = () => {
+      // Pause loop if mouse has been inactive for more than 1.5 seconds
+      if (Date.now() - lastActiveTime > 1500) {
+        isLoopRunning = false;
+        rafId.current = null;
+        return;
+      }
+
       const { x: targetX, y: targetY } = mousePos.current;
 
+      // Lerp scales
+      ringScale += (targetRingScale - ringScale) * 0.15;
+      dotScale += (targetDotScale - dotScale) * 0.15;
+
       // Dot follows instantly
-      gsap.set(dot, { x: targetX, y: targetY });
+      dot.style.transform = `translate3d(${targetX}px, ${targetY}px, 0) translate(-50%, -50%) scale(${dotScale})`;
 
       // Ring follows with smooth delay
-      ringX += (targetX - ringX) * 0.2;
-      ringY += (targetY - ringY) * 0.2;
-      gsap.set(ring, { x: ringX, y: ringY });
+      ringX += (targetX - ringX) * 0.18;
+      ringY += (targetY - ringY) * 0.18;
+      ring.style.transform = `translate3d(${ringX}px, ${ringY}px, 0) translate(-50%, -50%) scale(${ringScale})`;
 
       // Trail particles follow with increasing delay
       let prevX = ringX;
@@ -71,9 +99,9 @@ function CustomCursor() {
       trailRefs.current.forEach((trail, i) => {
         if (!trail) return;
         const pos = trailPositions[i];
-        pos.x += (prevX - pos.x) * 0.25;
-        pos.y += (prevY - pos.y) * 0.25;
-        gsap.set(trail, { x: pos.x, y: pos.y });
+        pos.x += (prevX - pos.x) * 0.22;
+        pos.y += (prevY - pos.y) * 0.22;
+        trail.style.transform = `translate3d(${pos.x}px, ${pos.y}px, 0) translate(-50%, -50%)`;
         prevX = pos.x;
         prevY = pos.y;
       });
@@ -84,165 +112,143 @@ function CustomCursor() {
     rafId.current = requestAnimationFrame(animate);
 
     // Hover effects for interactive elements
-    const onElementEnter = (e) => {
+    const onElementEnter = () => {
       isHovering = true;
-      gsap.to(ring, {
-        scale: 2.5,
-        borderColor: 'rgba(197, 168, 98, 0.6)',
-        duration: 0.4,
-        ease: 'power3.out',
-      });
-      gsap.to(dot, {
-        scale: 0.5,
-        duration: 0.3,
-        ease: 'power3.out',
-      });
+      targetRingScale = 2.0;
+      targetDotScale = 0.4;
+      ring.style.borderColor = 'rgba(197, 168, 98, 0.7)';
+      ring.style.backgroundColor = 'rgba(197, 168, 98, 0.05)';
+      triggerRender(800);
     };
 
-    const onElementLeave = (e) => {
+    const onElementLeave = () => {
       isHovering = false;
       isImageHover = false;
-      gsap.to(ring, {
-        scale: 1,
-        borderColor: 'rgba(197, 168, 98, 0.5)',
-        duration: 0.4,
-        ease: 'power3.out',
-      });
-      gsap.to(dot, {
-        scale: 1,
-        duration: 0.3,
-        ease: 'power3.out',
-      });
+      targetRingScale = 1;
+      targetDotScale = 1;
+      ring.style.borderColor = 'rgba(197, 168, 98, 0.5)';
+      ring.style.backgroundColor = 'transparent';
       if (text) {
-        gsap.to(text, { opacity: 0, scale: 0.5, duration: 0.2 });
+        text.style.opacity = '0';
+        text.style.transform = 'scale(0.5)';
       }
+      triggerRender(800);
     };
 
     // Image hover — show "عرض" text
-    const onImageEnter = (e) => {
+    const onImageEnter = () => {
       isImageHover = true;
-      gsap.to(ring, {
-        scale: 3,
-        borderColor: 'rgba(197, 168, 98, 0.8)',
-        duration: 0.4,
-        ease: 'power3.out',
-      });
-      gsap.to(dot, {
-        scale: 0,
-        duration: 0.2,
-      });
+      targetRingScale = 2.8;
+      targetDotScale = 0;
+      ring.style.borderColor = 'rgba(197, 168, 98, 0.9)';
+      ring.style.backgroundColor = 'rgba(197, 168, 98, 0.1)';
       if (text) {
-        gsap.to(text, { opacity: 1, scale: 1, duration: 0.3, ease: 'back.out(2)' });
+        text.style.opacity = '1';
+        text.style.transform = 'scale(1)';
       }
+      triggerRender(800);
     };
 
-    const onImageLeave = (e) => {
+    const onImageLeave = () => {
       isImageHover = false;
-      gsap.to(ring, {
-        scale: 1,
-        borderColor: 'rgba(197, 168, 98, 0.5)',
-        duration: 0.4,
-        ease: 'power3.out',
-      });
-      gsap.to(dot, {
-        scale: 1,
-        duration: 0.3,
-      });
+      targetRingScale = 1;
+      targetDotScale = 1;
+      ring.style.borderColor = 'rgba(197, 168, 98, 0.5)';
+      ring.style.backgroundColor = 'transparent';
       if (text) {
-        gsap.to(text, { opacity: 0, scale: 0.5, duration: 0.2 });
+        text.style.opacity = '0';
+        text.style.transform = 'scale(0.5)';
       }
+      triggerRender(800);
     };
 
     // Click effect
     const onMouseDown = () => {
-      gsap.to(dot, {
-        scale: 2.5,
-        duration: 0.1,
-        ease: 'power4.out',
-      });
-      gsap.to(ring, {
-        scale: isHovering ? 2 : 0.8,
-        duration: 0.15,
-        ease: 'power4.out',
-      });
+      targetDotScale = 2.0;
+      targetRingScale = isHovering ? 1.6 : 0.7;
+      triggerRender(500);
     };
 
     const onMouseUp = () => {
-      gsap.to(dot, {
-        scale: isHovering ? 0.5 : 1,
-        duration: 0.3,
-        ease: 'elastic.out(1, 0.3)',
-      });
-      gsap.to(ring, {
-        scale: isHovering ? 2.5 : 1,
-        duration: 0.4,
-        ease: 'elastic.out(1, 0.3)',
-      });
+      targetDotScale = isHovering ? 0.4 : 1;
+      targetRingScale = isHovering ? 2.0 : 1;
+      triggerRender(800);
     };
 
     // Mouse enter/leave viewport
     const onMouseEnterViewport = () => {
-      gsap.to([dot, ring], { opacity: 1, duration: 0.3 });
+      dot.style.opacity = '1';
+      ring.style.opacity = '1';
       trailRefs.current.forEach((trail) => {
-        if (trail) gsap.to(trail, { opacity: parseFloat(trail.dataset.opacity), duration: 0.3 });
+        if (trail) trail.style.opacity = trail.dataset.opacity;
       });
+      triggerRender(1500);
     };
 
     const onMouseLeaveViewport = () => {
-      gsap.to([dot, ring], { opacity: 0, duration: 0.3 });
+      dot.style.opacity = '0';
+      ring.style.opacity = '0';
       trailRefs.current.forEach((trail) => {
-        if (trail) gsap.to(trail, { opacity: 0, duration: 0.3 });
+        if (trail) trail.style.opacity = '0';
       });
+      triggerRender(1500);
     };
 
-    // Bind events
+    // Event Delegation: single listeners on window
+    let currentHoveredInteractive = null;
+    let currentHoveredImage = null;
+
+    const onMouseOver = (e) => {
+      const target = e.target;
+      if (!target) return;
+
+      // Interactive hover check
+      const interactiveEl = target.closest(INTERACTIVE_SELECTORS);
+      if (interactiveEl && interactiveEl !== currentHoveredInteractive) {
+        currentHoveredInteractive = interactiveEl;
+        onElementEnter();
+      }
+
+      // Image hover check
+      const imageEl = target.closest(IMAGE_SELECTORS);
+      if (imageEl && imageEl !== currentHoveredImage) {
+        currentHoveredImage = imageEl;
+        onImageEnter();
+      }
+    };
+
+    const onMouseOut = (e) => {
+      const target = e.target;
+      const related = e.relatedTarget;
+
+      if (currentHoveredInteractive && (!related || !related.closest(INTERACTIVE_SELECTORS) || related.closest(INTERACTIVE_SELECTORS) !== currentHoveredInteractive)) {
+        currentHoveredInteractive = null;
+        onElementLeave();
+      }
+
+      if (currentHoveredImage && (!related || !related.closest(IMAGE_SELECTORS) || related.closest(IMAGE_SELECTORS) !== currentHoveredImage)) {
+        currentHoveredImage = null;
+        onImageLeave();
+      }
+    };
+
     window.addEventListener('mousemove', onMouseMove);
     window.addEventListener('mousedown', onMouseDown);
     window.addEventListener('mouseup', onMouseUp);
+    window.addEventListener('mouseover', onMouseOver);
+    window.addEventListener('mouseout', onMouseOut);
     document.addEventListener('mouseenter', onMouseEnterViewport);
     document.addEventListener('mouseleave', onMouseLeaveViewport);
-
-    // Delegate hover events via MutationObserver-friendly approach
-    const bindHoverListeners = () => {
-      document.querySelectorAll(INTERACTIVE_SELECTORS).forEach((el) => {
-        el.addEventListener('mouseenter', onElementEnter);
-        el.addEventListener('mouseleave', onElementLeave);
-      });
-      document.querySelectorAll(IMAGE_SELECTORS).forEach((el) => {
-        el.addEventListener('mouseenter', onImageEnter);
-        el.addEventListener('mouseleave', onImageLeave);
-      });
-    };
-
-    // Initial bind + rebind on DOM changes
-    bindHoverListeners();
-
-    const observer = new MutationObserver(() => {
-      bindHoverListeners();
-    });
-
-    observer.observe(document.body, {
-      childList: true,
-      subtree: true,
-    });
 
     return () => {
       if (rafId.current) cancelAnimationFrame(rafId.current);
       window.removeEventListener('mousemove', onMouseMove);
       window.removeEventListener('mousedown', onMouseDown);
       window.removeEventListener('mouseup', onMouseUp);
+      window.removeEventListener('mouseover', onMouseOver);
+      window.removeEventListener('mouseout', onMouseOut);
       document.removeEventListener('mouseenter', onMouseEnterViewport);
       document.removeEventListener('mouseleave', onMouseLeaveViewport);
-      observer.disconnect();
-
-      document.querySelectorAll(INTERACTIVE_SELECTORS).forEach((el) => {
-        el.removeEventListener('mouseenter', onElementEnter);
-        el.removeEventListener('mouseleave', onElementLeave);
-      });
-      document.querySelectorAll(IMAGE_SELECTORS).forEach((el) => {
-        el.removeEventListener('mouseenter', onImageEnter);
-        el.removeEventListener('mouseleave', onImageLeave);
-      });
     };
   }, [isTouchDevice]);
 
@@ -252,7 +258,7 @@ function CustomCursor() {
     <div className="custom-cursor-wrapper" aria-hidden="true">
       {/* Trail dots */}
       {Array.from({ length: TRAIL_COUNT }).map((_, i) => {
-        const opacity = 0.3 - i * 0.07;
+        const opacity = 0.25 - i * 0.06;
         const size = 6 - i * 1;
         return (
           <div
@@ -272,7 +278,8 @@ function CustomCursor() {
               transform: 'translate(-50%, -50%)',
               pointerEvents: 'none',
               zIndex: 99997,
-              filter: `blur(${i * 0.5}px)`,
+              filter: `blur(${i * 0.4}px)`,
+              transition: 'opacity 0.2s ease',
             }}
           />
         );
@@ -295,6 +302,7 @@ function CustomCursor() {
           zIndex: 99999,
           boxShadow: '0 0 10px rgba(197, 168, 98, 0.6), 0 0 20px rgba(197, 168, 98, 0.3)',
           mixBlendMode: 'screen',
+          transition: 'opacity 0.2s ease',
         }}
       />
 
@@ -317,6 +325,7 @@ function CustomCursor() {
           alignItems: 'center',
           justifyContent: 'center',
           backdropFilter: 'blur(1px)',
+          transition: 'border-color 0.25s ease, background-color 0.25s ease, opacity 0.2s ease',
         }}
       >
         {/* View text for images */}
@@ -333,6 +342,7 @@ function CustomCursor() {
             letterSpacing: '1px',
             whiteSpace: 'nowrap',
             userSelect: 'none',
+            transition: 'opacity 0.25s ease, transform 0.25s ease',
           }}
         >
           عرض

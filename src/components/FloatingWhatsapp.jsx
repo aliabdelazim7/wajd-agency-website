@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { MessageSquare } from 'lucide-react';
 import { audioManager } from '../utils/audioManager';
+import { api } from '../services/api';
 
 function FloatingWhatsapp() {
   const [isVisible, setIsVisible] = useState(false);
+  const [waUrl, setWaUrl] = useState('https://wa.me/201019080277');
 
   useEffect(() => {
+    // 1. Scroll visibility toggle
     const toggleVisibility = () => {
       if (window.scrollY > 300) {
         setIsVisible(true);
@@ -15,11 +17,59 @@ function FloatingWhatsapp() {
     };
 
     window.addEventListener('scroll', toggleVisibility, { passive: true });
+    
+    // 2. UTM Preservation & Pre-filled message generator
+    const searchParams = new URLSearchParams(window.location.search);
+    const utmSource = searchParams.get('utm_source');
+    const utmMedium = searchParams.get('utm_medium');
+    const utmCampaign = searchParams.get('utm_campaign');
+
+    if (utmSource) sessionStorage.setItem('wajd_utm_source', utmSource);
+    if (utmMedium) sessionStorage.setItem('wajd_utm_medium', utmMedium);
+    if (utmCampaign) sessionStorage.setItem('wajd_utm_campaign', utmCampaign);
+
+    const storedSource = sessionStorage.getItem('wajd_utm_source') || 'Direct/Organic';
+    const storedMedium = sessionStorage.getItem('wajd_utm_medium') || 'None';
+    const storedCampaign = sessionStorage.getItem('wajd_utm_campaign') || 'None';
+
+    const baseText = 'مرحباً فريق وجد، أود طلب مكالمة فحص مجانية لحساباتي الإعلانية ومناقشة استراتيجية النمو.';
+    const trackingSuffix = `\n\n[المصدر: ${storedSource} | الوسيط: ${storedMedium} | الحملة: ${storedCampaign}]`;
+    const finalMessage = encodeURIComponent(baseText + trackingSuffix);
+    
+    setWaUrl(`https://wa.me/201019080277?text=${finalMessage}`);
+
     return () => window.removeEventListener('scroll', toggleVisibility);
   }, []);
 
   const handleClick = () => {
     audioManager.playClick();
+    
+    // Fire analytical tracking events (Universal/Custom integration)
+    try {
+      if (window.fbq) {
+        window.fbq('trackCustom', 'WhatsAppClick', {
+          utm_source: sessionStorage.getItem('wajd_utm_source') || 'Direct',
+          utm_medium: sessionStorage.getItem('wajd_utm_medium') || 'None',
+          utm_campaign: sessionStorage.getItem('wajd_utm_campaign') || 'None'
+        });
+      }
+      if (window.gtag) {
+        window.gtag('event', 'whatsapp_click', {
+          event_category: 'Engagement',
+          event_label: 'WhatsApp Floating Button'
+        });
+      }
+      if (window.ttq) {
+        window.ttq.track('Contact');
+      }
+
+      // Log click event into internal database
+      const sessionId = localStorage.getItem('wajd_session_id') || '00000000-0000-0000-0000-000000000000';
+      const pagePath = window.location.pathname;
+      api.analytics.logPageView(sessionId, `${pagePath}#whatsapp_click`, document.referrer, navigator.userAgent).catch(() => {});
+    } catch (err) {
+      console.warn('Analytics tracking failed for WhatsApp click:', err);
+    }
   };
 
   const handleMouseEnter = () => {
@@ -28,7 +78,7 @@ function FloatingWhatsapp() {
 
   return (
     <a
-      href="https://wa.me/201019080277?text=%D9%85%D8%B1%D8%AD%D8%A8%D8%A7%D9%8B%20%D9%81%D8%B1%D9%8A%D9%82%20%D9%88%D8%AC%D8%AF%D8%8C%20%D8%A3%D9%88%D8%AF%20%D8%B7%D9%84%D8%A8%20%D9%85%D9%83%D8%A7%D9%84%D9%85%D8%A9%20%D9%81%D8%AD%D8%B5%20%D9%84%D8%AD%D8%B3%D8%A7%D8%A8%D8%A7%D8%AA%D9%8A%20%D8%A7%D9%84%D8%A5%D8%B9%D9%84%D8%A7%D9%86%D9%8A%D8%A9%20%D8%A8%D9%85%D9%8A%D8%B2%D8%A7%D9%86%D9%8A%D8%A9%20%D8%B4%D9%87%D8%B1%D9%8A%D9%91%D8%A9%20%D9%85%D8%AD%D8%AF%D8%AF%D8%A9."
+      href={waUrl}
       target="_blank"
       rel="noopener noreferrer"
       className={`floating-whatsapp-btn ${isVisible ? 'visible' : ''}`}

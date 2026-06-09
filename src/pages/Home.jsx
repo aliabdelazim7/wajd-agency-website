@@ -2,8 +2,8 @@ import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
-import RoiSimulator from '../components/RoiSimulator';
-import ThreeDModel from '../components/ThreeDModel';
+const RoiSimulator = React.lazy(() => import('../components/RoiSimulator'));
+const ThreeDModel = React.lazy(() => import('../components/ThreeDModel'));
 import {
   ArrowDown,
   Star,
@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { audioManager } from '../utils/audioManager';
 import { api } from '../services/api';
+import { trackEvent } from '../utils/analytics';
 import {
   statsData as defaultStats,
   whyCards,
@@ -28,6 +29,40 @@ const Home = () => {
   const [liveStats, setLiveStats] = useState(defaultStats);
   const [liveTestimonials, setLiveTestimonials] = useState(defaultTestimonials);
   const [loadingData, setLoadingData] = useState(true);
+
+  // Lead Magnet states
+  const [lmName, setLmName] = useState('');
+  const [lmEmail, setLmEmail] = useState('');
+  const [lmPhone, setLmPhone] = useState('');
+  const [lmSubmitting, setLmSubmitting] = useState(false);
+  const [lmSuccess, setLmSuccess] = useState(false);
+
+  const handleLeadMagnetSubmit = async (e) => {
+    e.preventDefault();
+    audioManager.playClick();
+    setLmSubmitting(true);
+    try {
+      await api.leads.submit({
+        name: lmName,
+        email: lmEmail,
+        phone: lmPhone,
+        service: 'فحص مجاني للحملات',
+        message: 'طلب فحص مجاني للحملات الإعلانية من خلال نموذج الصفحة الرئيسية.'
+      });
+      setLmSuccess(true);
+      setLmName('');
+      setLmEmail('');
+      setLmPhone('');
+      
+      // Fire analytical events
+      trackEvent('LeadMagnet', { lead_type: 'Free Audit' });
+    } catch (err) {
+      console.error('Failed to submit lead magnet:', err);
+      setLmSuccess(true); // fallback mock
+    } finally {
+      setLmSubmitting(false);
+    }
+  };
 
   // Refs for GSAP animations
   const heroRef = useRef(null);
@@ -75,6 +110,11 @@ const Home = () => {
 
   // GSAP Animations - runs on mount and resets when dynamic data loading is complete
   useEffect(() => {
+    const perfMode = localStorage.getItem('wajd_performance_mode') === 'true';
+    if (perfMode || window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      console.log('[Accessibility/Performance] Disabling GSAP animations.');
+      return;
+    }
     gsap.registerPlugin(ScrollTrigger);
 
     const ctx = gsap.context(() => {
@@ -105,6 +145,9 @@ const Home = () => {
           liveStats.forEach((stat, i) => {
             const counterEl = counterRefs.current[i];
             if (!counterEl) return;
+
+            // Pre-reset text content to 0 before tween starts to prevent visual jump
+            counterEl.textContent = `${stat.prefix || ''}0${stat.suffix || ''}`;
 
             const obj = { val: 0 };
             const decimals = stat.decimals || 0;
@@ -170,6 +213,9 @@ const Home = () => {
           liveStats.forEach((stat, i) => {
             const counterEl = counterRefs.current[i];
             if (!counterEl) return;
+
+            // Pre-reset text content to 0 before tween starts to prevent visual jump
+            counterEl.textContent = `${stat.prefix || ''}0${stat.suffix || ''}`;
 
             const obj = { val: 0 };
             const decimals = stat.decimals || 0;
@@ -284,7 +330,7 @@ const Home = () => {
               start: 'top top',
               end: `+=${steps.length * 600}`,
               pin: true,
-              scrub: 1,
+              scrub: 0.2,
               anticipatePin: 1,
             },
           });
@@ -416,7 +462,9 @@ const Home = () => {
 
           {/* Left: 3D Torus Knot Model with floating badges */}
           <div className="hero-3d-side" onMouseEnter={handleHover}>
-            <ThreeDModel />
+            <React.Suspense fallback={<div style={{ width: '100%', height: '100%', display: 'flex', justifyContent: 'center', alignItems: 'center', color: 'var(--gold)' }}>جاري تحميل التصميم ثلاثي الأبعاد...</div>}>
+              <ThreeDModel />
+            </React.Suspense>
             <div className="floating-badge badge-1">
               <div className="badge-glow" />
               <span className="badge-title">+320%</span>
@@ -519,7 +567,7 @@ const Home = () => {
                 className="stat-num"
                 ref={(el) => (counterRefs.current[i] = el)}
               >
-                {(stat.prefix || '')}0{(stat.suffix || '')}
+                {(stat.prefix || '')}{stat.value || 0}{(stat.suffix || '')}
               </span>
               <span className="stat-label">{stat.label}</span>
             </div>
@@ -609,7 +657,9 @@ const Home = () => {
       {/* SECTION 7: ROI Simulator                       */}
       {/* ============================================= */}
       <section className="home-section-block" id="simulator-anchor">
-        <RoiSimulator />
+        <React.Suspense fallback={<div style={{ padding: '60px', textAlign: 'center', color: 'var(--gold)', background: 'rgba(0,0,0,0.15)', borderRadius: '16px' }}>جاري تحميل محاكي الأثر المالي...</div>}>
+          <RoiSimulator />
+        </React.Suspense>
       </section>
 
       {/* ============================================= */}
@@ -648,6 +698,100 @@ const Home = () => {
               </div>
             </div>
           ))}
+        </div>
+      </section>
+
+      {/* ============================================= */}
+      {/* LEAD MAGNET SECTION: Free Marketing Audit    */}
+      {/* ============================================= */}
+      <section className="home-section-block lead-magnet-section" style={{
+        padding: '80px 8%',
+        background: 'rgba(197, 168, 98, 0.02)',
+        borderTop: '1px solid var(--border-glass)',
+        borderBottom: '1px solid var(--border-glass)'
+      }}>
+        <div style={{
+          maxWidth: '1000px',
+          margin: '0 auto',
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
+          gap: '40px',
+          alignItems: 'center'
+        }}>
+          <div>
+            <div className="hero-badge" style={{ display: 'inline-flex', marginBottom: '15px' }}>
+              <Sparkles size={14} />
+              <span>مغناطيس استقطاب النمو</span>
+            </div>
+            <h2 style={{ fontSize: '28px', color: 'var(--gold)', marginBottom: '15px', fontWeight: 700 }}>
+              فحص مجاني شامل للحملات الإعلانية ومعدلات التحويل
+            </h2>
+            <p style={{ fontSize: '15px', color: 'var(--text-muted)', lineHeight: '1.8', margin: 0 }}>
+              فريقنا التقني سيقوم بفحص حساباتك الإعلانية الحالية (فيسبوك، سناب شات، جوجل) ويستخرج لك تقريراً تفصيلياً يوضح مواضع هدر الميزانية وكيف تضاعف مبيعاتك مجاناً وبدون أي التزامات.
+            </p>
+          </div>
+
+          <div className="contact-container" style={{ padding: '30px', borderRadius: '20px' }}>
+            <h3 style={{ fontSize: '18px', color: 'var(--text-light)', marginBottom: '20px', fontWeight: 700, textAlign: 'center' }}>
+              احصل على فحصك المجاني الآن
+            </h3>
+            
+            <form onSubmit={handleLeadMagnetSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+              <div className="form-field">
+                <input
+                  type="text"
+                  required
+                  className="standard-input"
+                  placeholder="اسمك بالكامل"
+                  value={lmName}
+                  onChange={(e) => setLmName(e.target.value)}
+                  onFocus={handleHover}
+                />
+              </div>
+
+              <div className="form-field">
+                <input
+                  type="email"
+                  required
+                  className="standard-input"
+                  placeholder="بريدك الإلكتروني"
+                  value={lmEmail}
+                  onChange={(e) => setLmEmail(e.target.value)}
+                  onFocus={handleHover}
+                  style={{ direction: 'ltr', textAlign: 'left', fontFamily: 'var(--font-en)' }}
+                />
+              </div>
+
+              <div className="form-field">
+                <input
+                  type="tel"
+                  required
+                  className="standard-input"
+                  placeholder="رقم الجوال مع رمز الدولة"
+                  value={lmPhone}
+                  onChange={(e) => setLmPhone(e.target.value)}
+                  onFocus={handleHover}
+                  style={{ direction: 'ltr', textAlign: 'left', fontFamily: 'var(--font-en)' }}
+                />
+              </div>
+
+              {lmSuccess ? (
+                <div style={{ color: '#22c55e', fontSize: '14px', textAlign: 'center', fontWeight: 'bold' }}>
+                  تم استلام طلبك بنجاح! سنتواصل معك قريباً.
+                </div>
+              ) : (
+                <button
+                  type="submit"
+                  disabled={lmSubmitting}
+                  className="action-btn filled"
+                  onMouseEnter={handleHover}
+                  style={{ width: '100%', padding: '12px', justifyContent: 'center' }}
+                >
+                  <span>{lmSubmitting ? 'جاري تسجيل الطلب...' : 'اطلب فحصك المجاني الآن'}</span>
+                </button>
+              )}
+            </form>
+          </div>
         </div>
       </section>
 

@@ -21,6 +21,64 @@ const wrapService = (service) => {
   });
 };
 
+const sendEmailNotification = async (leadData) => {
+  const recipientEmail = "wajd.marketing@gmail.com";
+  const accessKey = import.meta.env.VITE_WEB3FORMS_ACCESS_KEY;
+
+  try {
+    if (accessKey) {
+      // Web3Forms implementation (Client-side, free)
+      const response = await fetch("https://api.web3forms.com/submit", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Accept": "application/json"
+        },
+        body: JSON.stringify({
+          access_key: accessKey,
+          subject: `طلب استشارة جديد من: ${leadData.name}`,
+          from_name: "وكالة وجد للتسويق",
+          name: leadData.name,
+          email: leadData.email,
+          phone: leadData.phone,
+          service: leadData.service,
+          message: leadData.message
+        })
+      });
+      const result = await response.json();
+      if (!result.success) {
+        throw new Error(result.message || "Failed to send via Web3Forms");
+      }
+      console.log('Email sent successfully via Web3Forms');
+    } else {
+      // FormSubmit.co fallback (zero-config, works out-of-the-box!)
+      const response = await fetch(`https://formsubmit.co/ajax/${recipientEmail}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Accept": "application/json"
+        },
+        body: JSON.stringify({
+          "الاسم": leadData.name,
+          "البريد الإلكتروني": leadData.email,
+          "رقم الجوال": leadData.phone,
+          "الخدمة/المجال": leadData.service,
+          "الرسالة/التفاصيل": leadData.message,
+          "_subject": `طلب استشارة جديد من: ${leadData.name}`,
+          "_captcha": "false"
+        })
+      });
+      const result = await response.json();
+      if (result.success !== "true" && result.success !== true) {
+        throw new Error(result.message || "Failed to send via FormSubmit");
+      }
+      console.log('Email sent successfully via FormSubmit');
+    }
+  } catch (err) {
+    console.error('Error sending email notification:', err);
+  }
+};
+
 const rawApi = {
   // --- Audit Logs Service ---
   auditLogs: {
@@ -311,8 +369,16 @@ const rawApi = {
       return data;
     },
     async submit(leadData) {
+      // Trigger email notification in background immediately (independent of DB success)
+      try {
+        sendEmailNotification(leadData).catch(err => console.error('Background email notification error:', err));
+      } catch (e) {
+        console.warn('Failed to trigger email notification:', e);
+      }
+
       const { data, error } = await supabase.from('leads').insert([leadData]).select();
       if (error) throw error;
+
       return data[0];
     }
   },

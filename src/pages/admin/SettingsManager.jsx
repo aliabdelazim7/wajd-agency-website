@@ -205,6 +205,26 @@ const SettingsManager = () => {
     setSaving(true);
     setFeedback({ type: '', msg: '' });
 
+    // 1. Ask for confirmation before modifying custom injected scripts
+    const confirmMsg = newScript.id 
+      ? 'تحذير أمني: تعديل كود تتبع نشط قد يعطل الموقع أو يعرض بيانات المستخدمين للخطر. هل تريد الاستمرار بحفظ التعديلات؟'
+      : 'تحذير أمني: أنت على وشك حقن كود تتبع جديد في الموقع. قد يسبب هذا ثغرات XSS أو يؤثر على أداء الموقع. هل أنت متأكد من موثوقية هذا الكود؟';
+    
+    if (!window.confirm(confirmMsg)) {
+      setSaving(false);
+      return;
+    }
+
+    // 2. Validate tags before publishing
+    const code = newScript.script_code.trim();
+    const hasValidHtmlTags = /<[a-z][\s\S]*>/i.test(code);
+    if (!hasValidHtmlTags && code.length > 0) {
+      if (!window.confirm('تنبيه: الكود المدخل لا يبدو أنه يحتوي على وسوم HTML صالحة (مثل <script> أو <noscript>). هل أنت متأكد من رغبتك في حفظه كـ HTML محقون على أي حال؟')) {
+        setSaving(false);
+        return;
+      }
+    }
+
     try {
       const scriptData = {
         name: newScript.name,
@@ -216,14 +236,25 @@ const SettingsManager = () => {
         scriptData.id = newScript.id;
       }
 
+      // Find old script version for rollback/audit trail
+      const oldScript = scriptsList.find(s => s.id === newScript.id);
+      const oldCode = oldScript ? oldScript.script_code : '';
+
       await api.scripts.upsert(scriptData);
-      setFeedback({ type: 'success', msg: 'تم حفظ وتفعيل كود التتبع بنجاح!' });
+      
+      // Detailed audit log for rollback support
+      const auditDetails = oldScript
+        ? `تعديل كود التتبع "${newScript.name}".\n\n[الكود القديم]:\n${oldCode}\n\n[الكود الجديد]:\n${newScript.script_code}`
+        : `إضافة كود تتبع جديد "${newScript.name}":\n${newScript.script_code}`;
+      await api.auditLogs.log(oldScript ? 'تعديل كود التتبع' : 'إضافة كود تتبع', auditDetails).catch(() => {});
+
+      setFeedback({ type: 'success', msg: 'تم حفظ وتحديث كود التتبع وسجل الأمان بنجاح!' });
       setNewScript({ id: null, name: '', placement: 'head', script_code: '', active: true });
       setEditingScript(false);
       fetchData();
     } catch (err) {
       console.error('Error saving script:', err);
-      setFeedback({ type: 'error', msg: 'فشل حفظ كود التتبع. يرجى التأكد من تشغيل SQL الخاص بالترقية.' });
+      setFeedback({ type: 'error', msg: 'فشل حفظ كود التتبع. يرجى التحقق من الاتصال بالخادم.' });
     } finally {
       setSaving(false);
     }

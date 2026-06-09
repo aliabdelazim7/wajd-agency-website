@@ -50,6 +50,11 @@ const About = () => {
   };
 
   useEffect(() => {
+    const perfMode = localStorage.getItem('wajd_performance_mode') === 'true';
+    if (perfMode || window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      console.log('[Accessibility/Performance] Disabling GSAP animations.');
+      return;
+    }
     gsap.registerPlugin(ScrollTrigger);
 
     const ctx = gsap.context(() => {
@@ -464,6 +469,57 @@ const About = () => {
         </div>
       </section>
 
+      {/* ================ TRUST BANNER: CLIENT LOGOS ================ */}
+      <section className="about-logos-banner" style={{
+        padding: '30px 8%',
+        background: 'rgba(255,255,255,0.01)',
+        borderTop: '1px solid var(--border-glass)',
+        borderBottom: '1px solid var(--border-glass)',
+        overflow: 'hidden'
+      }}>
+        <div style={{ maxWidth: '1200px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '15px' }}>
+          <span style={{
+            fontSize: '11px',
+            textTransform: 'uppercase',
+            letterSpacing: '1.5px',
+            color: 'var(--gold)',
+            textAlign: 'center',
+            fontWeight: 700,
+            opacity: 0.8
+          }}>وجد في أرقام وتكاملات شركاء النجاح</span>
+          
+          <div style={{
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            gap: '30px',
+            flexWrap: 'wrap',
+            opacity: 0.7
+          }}>
+            {['العويد للعود', 'بارنر للأثاث', 'تطبيق تويو', 'مجوهرات جسار', 'براند فلاش', 'أغذية قناطير', 'براند كاملز', 'منابت الزراعية'].map((logo, i) => (
+              <div 
+                key={i} 
+                className="logo-item-card"
+                onMouseEnter={handleHover}
+                style={{
+                  padding: '8px 18px',
+                  borderRadius: '8px',
+                  border: '1px solid var(--border-glass)',
+                  background: 'rgba(0,0,0,0.2)',
+                  fontSize: '13px',
+                  fontWeight: 600,
+                  color: 'var(--text-light)',
+                  cursor: 'default',
+                  transition: 'all 0.3s'
+                }}
+              >
+                {logo}
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* ================ SECTION 2: OUR STORY ================ */}
       <section className="about-story" ref={storyRef}>
         <h2 className="about-section__title">قصة وجد</h2>
@@ -503,6 +559,41 @@ const About = () => {
             </div>
             <div className="about-story__visual-glow" />
           </div>
+        </div>
+      </section>
+
+      {/* ================ SECTION 2.5: SOCIAL PROOF STATS ================ */}
+      <section className="about-stats" style={{
+        padding: '60px 8%',
+        background: 'linear-gradient(180deg, rgba(0,0,0,0.2) 0%, transparent 100%)',
+        textAlign: 'center'
+      }}>
+        <div style={{ maxWidth: '1100px', margin: '0 auto', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '30px' }}>
+          {[
+            { value: '15+', label: 'عميل وشركة إقليمية تضع ثقتها فينا' },
+            { value: '180+', label: 'حملة إعلانية ممولة تمت إدارتها بكفاءة' },
+            { value: '$12M+', label: 'ميزانيات إعلانية مُدارة بمبيعات مضاعفة' },
+            { value: '6.4x', label: 'أعلى عائد إعلاني (ROAS) محقق لعملائنا' }
+          ].map((stat, index) => (
+            <div 
+              key={index} 
+              className="about-stat-card"
+              onMouseEnter={handleHover}
+              style={{
+                padding: '30px 20px',
+                borderRadius: '16px',
+                background: 'rgba(255,255,255,0.02)',
+                border: '1px solid var(--border-glass)',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '8px',
+                transition: 'all 0.3s'
+              }}
+            >
+              <span style={{ fontSize: '36px', fontWeight: 700, color: 'var(--gold)', fontFamily: 'var(--font-en)' }}>{stat.value}</span>
+              <span style={{ fontSize: '13px', color: 'var(--text-muted)' }}>{stat.label}</span>
+            </div>
+          ))}
         </div>
       </section>
 
@@ -632,6 +723,64 @@ const About = () => {
               <h3 className="value-title">{value.title}</h3>
               <p className="value-desc">{value.desc}</p>
               <div className="about-values__number">{String(index + 1).padStart(2, '0')}</div>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* ================ SECTION 7.5: TEAM SECTION ================ */}
+      <section className="about-team" style={{
+        padding: '80px 8%',
+        background: 'rgba(0,0,0,0.1)',
+        borderTop: '1px solid var(--border-glass)'
+      }}>
+        <h2 className="about-section__title">فريق هندسة النمو</h2>
+        <p className="about-section__subtitle">نخبة من خبراء شراء المساحات الإعلانية، هندسة العروض، وتحليل البيانات الملتزمين بنمو مبيعاتك.</p>
+        
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
+          gap: '30px',
+          maxWidth: '1200px',
+          margin: '40px auto 0'
+        }}>
+          {[
+            { name: 'علي عبد العظيم', role: 'Founder & Growth Architect', desc: 'مؤسس وجد للتسويق وخبير استراتيجيات النمو وهندسة عروض التجارة الإلكترونية بمعدلات تحويل قياسية.' },
+            { name: 'أحمد رسلان', role: 'Media Buying Lead', desc: 'مسؤول إدارة وتوجيه الحملات الإعلانية الضخمة على ميتا، سناب وتيك توك بفعالية وكفاءة إنفاق عالية.' },
+            { name: 'سارة المهدي', role: 'Web Integrations & Pixel Expert', desc: 'المتخصصة في التكاملات التقنية المعقدة وربط خوادم المتجر CAPI وتتبع البيانات من جانب السيرفر.' },
+            { name: 'كريم الجوهري', role: 'Performance & Data Analyst', desc: 'مسؤول قراءة وتحليل سلوك الزوار وتحسين معدلات التحويل للعملاء لضمان استدامة الأرباح.' }
+          ].map((member, i) => (
+            <div 
+              key={i} 
+              className="team-member-card philosophy-card" 
+              onMouseEnter={handleHover}
+              style={{
+                padding: '30px 25px',
+                textAlign: 'center',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '12px'
+              }}
+            >
+              <div style={{
+                width: '70px',
+                height: '70px',
+                borderRadius: '50%',
+                background: 'rgba(197, 168, 98, 0.05)',
+                border: '1px solid rgba(197, 168, 98, 0.2)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                margin: '0 auto 10px',
+                color: 'var(--gold)',
+                fontSize: '20px',
+                fontWeight: 700
+              }}>
+                {member.name.split(' ').map(n => n[0]).join('')}
+              </div>
+              <h3 style={{ fontSize: '18px', fontWeight: 700, color: 'var(--text-light)', margin: 0 }}>{member.name}</h3>
+              <span style={{ fontSize: '12px', color: 'var(--gold)', fontWeight: 600 }}>{member.role}</span>
+              <p style={{ fontSize: '13px', color: 'var(--text-muted)', lineHeight: '1.6', margin: 0 }}>{member.desc}</p>
             </div>
           ))}
         </div>

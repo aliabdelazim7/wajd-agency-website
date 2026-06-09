@@ -17,6 +17,12 @@ const AdminLogin = () => {
   const from = location.state?.from?.pathname || '/admin';
 
   useEffect(() => {
+    if (location.state?.error) {
+      setErrorMsg(location.state.error);
+    }
+  }, [location.state]);
+
+  useEffect(() => {
     // Check if session already exists
     const checkSession = async () => {
       try {

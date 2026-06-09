@@ -16,6 +16,7 @@ import Privacy from './pages/Privacy';
 import ScriptInjector from './components/ScriptInjector';
 import { useTrafficTracker } from './utils/useTrafficTracker';
 import { api } from './services/api';
+import { initScrollDepthTracking } from './utils/analytics';
 
 // Admin Imports
 import ProtectedRoute from './components/ProtectedRoute';
@@ -39,7 +40,8 @@ import {
   VolumeX,
   Mail,
   Menu,
-  X
+  X,
+  Zap
 } from 'lucide-react';
 
 gsap.registerPlugin(ScrollTrigger);
@@ -48,12 +50,34 @@ gsap.registerPlugin(ScrollTrigger);
 function ScrollToTop() {
   const { pathname } = useLocation();
 
+  // Enforce manual scroll restoration to prevent browser from overriding our scroll reset
   useEffect(() => {
-    window.scrollTo(0, 0);
+    if ('scrollRestoration' in window.history) {
+      window.history.scrollRestoration = 'manual';
+    }
+  }, []);
+
+  useEffect(() => {
+    // Force all possible scrollable containers to scroll to top instantly
+    window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+    document.documentElement.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+    document.body.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+
     // Also reset Lenis scroll position if available
     if (window.__lenis) {
       window.__lenis.scrollTo(0, { immediate: true });
     }
+
+    // Dynamic Canonical Link update
+    const productionDomain = 'https://wajd-agency.com';
+    let canonicalLink = document.querySelector('link[rel="canonical"]');
+    if (!canonicalLink) {
+      canonicalLink = document.createElement('link');
+      canonicalLink.setAttribute('rel', 'canonical');
+      document.head.appendChild(canonicalLink);
+    }
+    const cleanPath = pathname === '/' ? '' : pathname.replace(/\/$/, '');
+    canonicalLink.setAttribute('href', `${productionDomain}${cleanPath}`);
   }, [pathname]);
 
   return null;
@@ -64,7 +88,9 @@ function AppContent() {
   const [activeSection, setActiveSection] = useState(0);
   const [isMuted, setIsMuted] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const performanceMode = true;
   const location = useLocation();
+  const isAdminRoute = location.pathname.startsWith('/admin');
   const headerRef = useRef(null);
   const lenisRef = useRef(null);
 
@@ -178,12 +204,19 @@ function AppContent() {
     setMobileMenuOpen(false);
   }, [location.pathname]);
 
+  // Scroll depth tracking on route change
+  useEffect(() => {
+    const cleanup = initScrollDepthTracking();
+    return () => {
+      cleanup();
+    };
+  }, [location.pathname]);
+
   // Lenis smooth scroll + GSAP ScrollTrigger integration
   useEffect(() => {
-    const isAdmin = location.pathname.startsWith('/admin');
     const isMobile = window.innerWidth < 1024 || 'ontouchstart' in window || navigator.maxTouchPoints > 0;
 
-    if (isAdmin || isMobile) {
+    if (isAdminRoute || isMobile || performanceMode) {
       if (lenisRef.current) {
         lenisRef.current.destroy();
         lenisRef.current = null;
@@ -196,13 +229,12 @@ function AppContent() {
 
     if (!lenisRef.current) {
       const lenis = new Lenis({
-        duration: 1.2,
-        easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
+        lerp: 0.12,
         orientation: 'vertical',
         gestureOrientation: 'vertical',
         smoothWheel: true,
-        wheelMultiplier: 1,
-        touchMultiplier: 2,
+        wheelMultiplier: 1.1,
+        touchMultiplier: 1.5,
       });
 
       lenisRef.current = lenis;
@@ -229,7 +261,7 @@ function AppContent() {
         gsap.ticker.remove(rafUpdate);
       }
     };
-  }, [location.pathname]);
+  }, [isAdminRoute, performanceMode]);
 
   // Header scroll behavior — hide/show on scroll direction
   useEffect(() => {
@@ -390,6 +422,8 @@ function AppContent() {
     updateSeo();
   }, [location.pathname]);
 
+
+
   // Lock body scroll when mobile menu is open
   useEffect(() => {
     if (mobileMenuOpen) {
@@ -420,15 +454,15 @@ function AppContent() {
     setMobileMenuOpen((prev) => !prev);
   };
 
-  const isAdminRoute = location.pathname.startsWith('/admin');
+
 
   return (
-    <div className={`app-container ${isAdminRoute ? 'admin-mode' : ''}`}>
+    <div className={`app-container ${isAdminRoute ? 'admin-mode' : ''} ${performanceMode ? 'performance-mode' : ''}`}>
       {/* Custom Cursor */}
-      <CustomCursor />
+      {!performanceMode && <CustomCursor />}
 
       {/* Grain Overlay */}
-      <GrainOverlay />
+      {!performanceMode && <GrainOverlay />}
 
       {/* Dynamic tracking pixel and script injector */}
       <ScriptInjector />
@@ -445,7 +479,7 @@ function AppContent() {
       </div>
 
       {/* Background Interactive Particles */}
-      <ParticleCanvas activeSection={activeSection} />
+      {!performanceMode && <ParticleCanvas activeSection={activeSection} />}
 
       {/* Scroll to top on route change */}
       <ScrollToTop />

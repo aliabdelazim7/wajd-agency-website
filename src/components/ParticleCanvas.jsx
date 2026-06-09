@@ -22,11 +22,24 @@ const ParticleCanvas = ({ activeSection }) => {
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
 
+    // On-demand rendering states
+    let lastActiveTime = Date.now() + 4500; // Keep active for 4.5 seconds on mount/transition
+    let isLoopRunning = true;
+
+    const triggerRender = (extraTime = 0) => {
+      lastActiveTime = Math.max(lastActiveTime, Date.now() + extraTime);
+      if (!isLoopRunning) {
+        isLoopRunning = true;
+        animationFrameRef.current = requestAnimationFrame(animate);
+      }
+    };
+
     // Resize handler
     const resizeCanvas = () => {
       canvas.width = window.innerWidth;
       canvas.height = window.innerHeight;
       initParticles();
+      triggerRender(2000); // Render for 2 seconds after resize
     };
 
     // Particle class
@@ -82,10 +95,8 @@ const ParticleCanvas = ({ activeSection }) => {
 
       draw() {
         ctx.fillStyle = 'rgba(197, 168, 98, 0.75)'; // Wajd Gold
-        ctx.beginPath();
-        ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
-        ctx.closePath();
-        ctx.fill();
+        // Draw square rects instead of circular paths for up to 15x faster browser rendering
+        ctx.fillRect(this.x - this.size / 2, this.y - this.size / 2, this.size, this.size);
       }
     }
 
@@ -131,7 +142,6 @@ const ParticleCanvas = ({ activeSection }) => {
 
         } else if (section === 3) {
           // SECTION 3: 3D Fibonacci Sphere (Portfolio/Case Studies)
-          // Arranges particles in a 3D sphere projection rotating slightly
           const phi = Math.acos(-1 + (2 * i) / count);
           const theta = Math.sqrt(count * Math.PI) * phi;
           const sphereRadius = 150;
@@ -210,6 +220,13 @@ const ParticleCanvas = ({ activeSection }) => {
 
     // Animation Loop
     const animate = () => {
+      // Pause loop if no interaction has happened for over 1.5 seconds
+      if (Date.now() - lastActiveTime > 1500) {
+        isLoopRunning = false;
+        animationFrameRef.current = null;
+        return;
+      }
+
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       const mouse = mouseRef.current;
       const particles = particlesRef.current;
@@ -260,24 +277,32 @@ const ParticleCanvas = ({ activeSection }) => {
     const handleMouseMove = (e) => {
       mouseRef.current.x = e.clientX;
       mouseRef.current.y = e.clientY;
+      triggerRender(100);
     };
 
     const handleMouseLeave = () => {
       mouseRef.current.x = null;
       mouseRef.current.y = null;
+      triggerRender(500);
+    };
+
+    const handleScroll = () => {
+      triggerRender(500); // keep animating during scroll
     };
 
     window.addEventListener('resize', resizeCanvas);
     window.addEventListener('mousemove', handleMouseMove);
     window.addEventListener('mouseleave', handleMouseLeave);
+    window.addEventListener('scroll', handleScroll, { passive: true });
 
     resizeCanvas();
-    animate();
+    triggerRender(3500); // initial render window
 
     return () => {
       window.removeEventListener('resize', resizeCanvas);
       window.removeEventListener('mousemove', handleMouseMove);
       window.removeEventListener('mouseleave', handleMouseLeave);
+      window.removeEventListener('scroll', handleScroll);
       if (animationFrameRef.current) {
         cancelAnimationFrame(animationFrameRef.current);
       }

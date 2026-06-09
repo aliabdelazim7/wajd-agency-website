@@ -9,6 +9,7 @@ import {
 import { audioManager } from '../utils/audioManager';
 import { FAQ_DATA as defaultFaqs, PROCESS_STEPS } from '../data/contactData';
 import { api } from '../services/api';
+import { trackEvent } from '../utils/analytics';
 
 const Contact = () => {
   const [openFaq, setOpenFaq] = useState(null);
@@ -17,11 +18,70 @@ const Contact = () => {
   const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
   const [details, setDetails] = useState('');
-  const [budgetRange, setBudgetRange] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   const [liveFaqs, setLiveFaqs] = useState(defaultFaqs);
+  
+  // Security and CAPTCHA states
+  const [honeypot, setHoneypot] = useState('');
+  const [turnstileToken, setTurnstileToken] = useState('');
+  const [formError, setFormError] = useState('');
+  const turnstileContainerRef = useRef(null);
+  
   const navigate = useNavigate();
+
+  // Load Cloudflare Turnstile script dynamically
+  useEffect(() => {
+    let scriptEl = document.querySelector('script[src*="challenges.cloudflare.com"]');
+    if (!scriptEl) {
+      const script = document.createElement('script');
+      script.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit';
+      script.async = true;
+      script.defer = true;
+      document.body.appendChild(script);
+    }
+  }, []);
+
+  // Initialize Turnstile widget
+  useEffect(() => {
+    let widgetId;
+    const renderWidget = () => {
+      if (window.turnstile && turnstileContainerRef.current) {
+        try {
+          widgetId = window.turnstile.render(turnstileContainerRef.current, {
+            sitekey: '1x00000000000000000000AA', // CF Turnstile Testing Key (always passes)
+            callback: (token) => {
+              setTurnstileToken(token);
+              setFormError('');
+            },
+            'error-callback': () => {
+              console.error('Turnstile CAPTCHA render error');
+            }
+          });
+        } catch (err) {
+          console.warn('Failed to render Turnstile widget:', err);
+        }
+      }
+    };
+
+    if (window.turnstile) {
+      renderWidget();
+    } else {
+      const interval = setInterval(() => {
+        if (window.turnstile) {
+          renderWidget();
+          clearInterval(interval);
+        }
+      }, 500);
+      return () => clearInterval(interval);
+    }
+
+    return () => {
+      if (widgetId && window.turnstile) {
+        window.turnstile.remove(widgetId);
+      }
+    };
+  }, [isSuccess]); // Re-render widget if success state changes (e.g. if they want to submit again)
 
   // Fetch FAQs from database (fallback to local if not set or fails)
   useEffect(() => {
@@ -62,6 +122,41 @@ const Contact = () => {
   const handleFormSubmit = async (e) => {
     e.preventDefault();
     handleClick();
+    setFormError('');
+
+    // 1. Honeypot check
+    if (honeypot !== '') {
+      console.warn('[SECURITY INFO] Honeypot field filled. Bot submission discarded silently.');
+      setIsSubmitting(true);
+      setTimeout(() => {
+        setIsSuccess(true);
+        setIsSubmitting(false);
+      }, 800);
+      return;
+    }
+
+    // 2. Client-side CAPTCHA verification
+    if (!turnstileToken) {
+      setFormError('يرجى تأكيد التحقق الأمني (CAPTCHA) قبل الإرسال.');
+      return;
+    }
+
+    // 3. Rate limiting check (60 seconds between submissions)
+    const lastSubmitTime = localStorage.getItem('wajd_last_submit_time');
+    const now = Date.now();
+    if (lastSubmitTime && now - parseInt(lastSubmitTime, 10) < 60000) {
+      setFormError('يرجى الانتظار دقيقة واحدة بين محاولات إرسال الاستشارات.');
+      return;
+    }
+
+    // 4. Duplicate submission check
+    const currentSubmissionHash = `${name.trim().toLowerCase()}|${email.trim().toLowerCase()}|${phone.trim()}`;
+    const lastSubmissionHash = localStorage.getItem('wajd_last_submit_hash');
+    if (lastSubmissionHash === currentSubmissionHash) {
+      setFormError('لقد قمت بإرسال هذا الطلب بالفعل. سنتواصل معك في أقرب وقت.');
+      return;
+    }
+
     setIsSubmitting(true);
 
     try {
@@ -70,17 +165,26 @@ const Contact = () => {
         email,
         phone,
         service: industry || 'غير محدد',
-        message: `تفاصيل المشروع: ${details || 'لا يوجد'}\nميزانية المشروع المتوقعة: ${budgetRange || 'غير محددة'}`
+        message: details || 'لا يوجد'
       };
       await api.leads.submit(leadData);
+      
+      // Track lead submission
+      trackEvent('FormSubmission', { lead_type: 'B2B Consultation', service: industry || 'غير محدد' });
+      
+      // Save submission markers to localStorage
+      localStorage.setItem('wajd_last_submit_time', now.toString());
+      localStorage.setItem('wajd_last_submit_hash', currentSubmissionHash);
+      
       setIsSuccess(true);
+      setFormError('');
+      
       // Clear form inputs
       setName('');
       setIndustry('');
       setPhone('');
       setEmail('');
       setDetails('');
-      setBudgetRange('');
     } catch (err) {
       console.error('Failed to submit lead to database:', err);
       // Fallback: we still set success to true, but we could show an error.
@@ -92,6 +196,11 @@ const Contact = () => {
   };
 
   useEffect(() => {
+    const perfMode = localStorage.getItem('wajd_performance_mode') === 'true';
+    if (perfMode || window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      console.log('[Accessibility/Performance] Disabling GSAP animations.');
+      return;
+    }
     gsap.registerPlugin(ScrollTrigger);
     const ctx = gsap.context(() => {
       const mm = gsap.matchMedia();
@@ -267,125 +376,157 @@ const Contact = () => {
             طلب استشارة نمو مجانية
           </h2>
 
-          <form className="contact-standard-form" onSubmit={handleFormSubmit}>
-            <div className="form-grid">
-              <div className="form-field">
-                <label htmlFor="name-input" className="field-label">الاسم الكامل:</label>
-                <input
-                  id="name-input"
-                  type="text"
-                  name="name"
-                  autoComplete="name"
-                  className="standard-input"
-                  placeholder="أدخل اسمك الكامل"
-                  required
-                  maxLength={100}
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  onFocus={handleHover}
-                />
-              </div>
-
-              <div className="form-field">
-                <label htmlFor="industry-select" className="field-label">مجال عمل علامتك التجارية:</label>
-                <select
-                  id="industry-select"
-                  className="standard-input select-field"
-                  required
-                  value={industry}
-                  onChange={(e) => setIndustry(e.target.value)}
-                  onFocus={handleHover}
-                >
-                  <option value="" disabled>اختر مجال العمل</option>
-                  <option value="العطور">العطور والتجميل</option>
-                  <option value="العقارات">العقارات والمقاولات</option>
-                  <option value="الأغذية">الأغذية والمطاعم</option>
-                  <option value="الأزياء">الملابس والأزياء</option>
-                  <option value="التطبيقات">التطبيقات والتقنية</option>
-                  <option value="أخرى">مجال آخر</option>
-                </select>
-              </div>
-
-              <div className="form-field">
-                <label htmlFor="phone-input" className="field-label">رقم الجوال:</label>
-                <input
-                  id="phone-input"
-                  type="tel"
-                  name="tel"
-                  autoComplete="tel"
-                  className="standard-input"
-                  placeholder="مثال: +966500000000"
-                  required
-                  pattern="[0-9+\-\s]{7,20}"
-                  title="يرجى إدخال رقم جوال صالح (أرقام ومسافات فقط، بين 7 إلى 20 رقماً)"
-                  maxLength={25}
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                  onFocus={handleHover}
-                />
-              </div>
-
-              <div className="form-field">
-                <label htmlFor="email-input" className="field-label">البريد الإلكتروني:</label>
-                <input
-                  id="email-input"
-                  type="email"
-                  name="email"
-                  autoComplete="email"
-                  className="standard-input"
-                  placeholder="email@example.com"
-                  required
-                  maxLength={100}
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  onFocus={handleHover}
-                />
-              </div>
-
-              <div className="form-field">
-                <label htmlFor="budget-select" className="field-label">الميزانية الإعلانية الشهرية المتوقعة (USD):</label>
-                <select
-                  id="budget-select"
-                  className="standard-input select-field"
-                  required
-                  value={budgetRange}
-                  onChange={(e) => setBudgetRange(e.target.value)}
-                  onFocus={handleHover}
-                >
-                  <option value="" disabled>اختر الميزانية المتوقعة</option>
-                  <option value="Less than $2000">أقل من 2,000 دولار شهرياً</option>
-                  <option value="$2000 - $5000">من 2,000 إلى 5,000 دولار شهرياً</option>
-                  <option value="$5000 - $10000">من 5,000 إلى 10,000 دولار شهرياً</option>
-                  <option value="More than $10000">أكثر من 10,000 دولار شهرياً</option>
-                </select>
-              </div>
-
-              <div className="form-field full-width">
-                <label htmlFor="details-input" className="field-label">الأهداف التسويقية ونبذة عن علامتك التجارية:</label>
-                <textarea
-                  id="details-input"
-                  className="standard-input textarea-field"
-                  placeholder="اكتب أهدافك التسويقية ونبذة عن علامتك التجارية هنا..."
-                  required
-                  maxLength={1000}
-                  rows={4}
-                  value={details}
-                  onChange={(e) => setDetails(e.target.value)}
-                  onFocus={handleHover}
-                />
-              </div>
+          {isSuccess ? (
+            <div style={{ textAlign: 'center', padding: '40px 20px', color: 'var(--text-light)' }}>
+              <CheckCircle size={60} color="var(--gold)" style={{ margin: '0 auto 20px', display: 'block' }} />
+              <h3 style={{ fontSize: '24px', color: 'var(--gold)', marginBottom: '10px' }}>شكراً لك! تم إرسال طلبك بنجاح</h3>
+              <p style={{ fontSize: '16px', color: 'var(--text-muted)' }}>لقد استقبلنا طلب الاستشارة الخاص بك، وسيقوم مستشار النمو لدينا بالتواصل معك خلال 24 ساعة.</p>
+              <button 
+                onClick={() => setIsSuccess(false)}
+                className="action-btn outline"
+                onMouseEnter={handleHover}
+                style={{ marginTop: '25px', padding: '10px 24px' }}
+              >
+                إرسال طلب آخر
+              </button>
             </div>
+          ) : (
+            <form className="contact-standard-form" onSubmit={handleFormSubmit}>
+              {/* Honeypot field for spam protection */}
+              <div style={{ display: 'none' }} aria-hidden="true">
+                <input
+                  type="text"
+                  name="website_url_verification"
+                  tabIndex={-1}
+                  autoComplete="off"
+                  value={honeypot}
+                  onChange={(e) => setHoneypot(e.target.value)}
+                />
+              </div>
 
-            <button
-              type="submit"
-              className={`action-btn filled submit-standard-btn ${isSubmitting ? 'loading' : ''}`}
-              disabled={isSubmitting}
-              onMouseEnter={handleHover}
-            >
-              <span>{isSubmitting ? 'جاري الإرسال...' : 'أرسل طلب الاستشارة الآن'}</span>
-              <Send size={16} />
-            </button>
-          </form>
+              <div className="form-grid">
+                <div className="form-field">
+                  <label htmlFor="name-input" className="field-label">الاسم الكامل:</label>
+                  <input
+                    id="name-input"
+                    type="text"
+                    name="name"
+                    autoComplete="name"
+                    className="standard-input"
+                    placeholder="أدخل اسمك الكامل"
+                    required
+                    maxLength={100}
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    onFocus={handleHover}
+                  />
+                </div>
+
+                <div className="form-field">
+                  <label htmlFor="industry-select" className="field-label">مجال عمل علامتك التجارية:</label>
+                  <select
+                    id="industry-select"
+                    className="standard-input select-field"
+                    required
+                    value={industry}
+                    onChange={(e) => setIndustry(e.target.value)}
+                    onFocus={handleHover}
+                  >
+                    <option value="" disabled>اختر مجال العمل</option>
+                    <option value="العطور">العطور والتجميل</option>
+                    <option value="العقارات">العقارات والمقاولات</option>
+                    <option value="الأغذية">الأغذية والمطاعم</option>
+                    <option value="الأزياء">الملابس والأزياء</option>
+                    <option value="التطبيقات">التطبيقات والتقنية</option>
+                    <option value="أخرى">مجال آخر</option>
+                  </select>
+                </div>
+
+                <div className="form-field">
+                  <label htmlFor="phone-input" className="field-label">رقم الجوال:</label>
+                  <input
+                    id="phone-input"
+                    type="tel"
+                    name="tel"
+                    autoComplete="tel"
+                    className="standard-input"
+                    placeholder="مثال: +966500000000"
+                    required
+                    pattern="[0-9+\-\s]{7,20}"
+                    title="يرجى إدخال رقم جوال صالح (أرقام ومسافات فقط، بين 7 إلى 20 رقماً)"
+                    maxLength={25}
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                    onFocus={handleHover}
+                  />
+                </div>
+
+                <div className="form-field">
+                  <label htmlFor="email-input" className="field-label">البريد الإلكتروني:</label>
+                  <input
+                    id="email-input"
+                    type="email"
+                    name="email"
+                    autoComplete="email"
+                    className="standard-input"
+                    placeholder="email@example.com"
+                    required
+                    maxLength={100}
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    onFocus={handleHover}
+                  />
+                </div>
+
+
+
+                <div className="form-field full-width">
+                  <label htmlFor="details-input" className="field-label">الأهداف التسويقية ونبذة عن علامتك التجارية:</label>
+                  <textarea
+                    id="details-input"
+                    className="standard-input textarea-field"
+                    placeholder="اكتب أهدافك التسويقية ونبذة عن علامتك التجارية هنا..."
+                    required
+                    maxLength={1000}
+                    rows={4}
+                    value={details}
+                    onChange={(e) => setDetails(e.target.value)}
+                    onFocus={handleHover}
+                  />
+                </div>
+              </div>
+
+              {formError && (
+                <div style={{
+                  color: '#ef4444',
+                  background: 'rgba(239, 68, 68, 0.08)',
+                  border: '1px solid rgba(239, 68, 68, 0.3)',
+                  padding: '12px 16px',
+                  borderRadius: '12px',
+                  fontSize: '14px',
+                  marginBottom: '20px',
+                  textAlign: 'right'
+                }}>
+                  {formError}
+                </div>
+              )}
+
+              {/* CAPTCHA Widget */}
+              <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '20px' }}>
+                <div ref={turnstileContainerRef} id="turnstile-container"></div>
+              </div>
+
+              <button
+                type="submit"
+                className={`action-btn filled submit-standard-btn ${isSubmitting ? 'loading' : ''}`}
+                disabled={isSubmitting}
+                onMouseEnter={handleHover}
+              >
+                <span>{isSubmitting ? 'جاري الإرسال...' : 'أرسل طلب الاستشارة الآن'}</span>
+                <Send size={16} />
+              </button>
+            </form>
+          )}
         </div>
       </section>
 
@@ -753,47 +894,30 @@ const Contact = () => {
             </h3>
             
             <p style={{ fontSize: '16px', color: 'var(--text-muted)', margin: 0, lineHeight: '1.8' }}>
-              شكراً لتواصلك مع وكالة <strong>وجد</strong>. يقوم مهندسو النمو لدينا بمراجعة تفاصيل مشروعك وتجهيز الفحص الأولي.
+              شكراً لتواصلك مع وكالة <strong>وجد</strong>. لقد استلمنا رسالتك بنجاح، وسيقوم فريق النمو لدينا بالتواصل معك والرد عليك سريعاً.
             </p>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', width: '100%', marginTop: '10px' }}>
-              <a
-                href="https://cal.com/wajd-agency/audit"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="action-btn filled"
-                onClick={handleClick}
-                onMouseEnter={handleHover}
-                style={{
-                  padding: '14px 28px',
-                  fontSize: '15px',
-                  textDecoration: 'none',
-                  background: 'var(--gold)',
-                  borderColor: 'var(--gold)',
-                  color: '#000',
-                  fontWeight: 700,
-                  boxShadow: '0 0 20px var(--gold-glow)'
-                }}
-              >
-                <span>📅 احجز موعد مكالمتك الفورية الآن</span>
-              </a>
-
               <button
                 type="button"
-                className="action-btn"
+                className="action-btn filled"
                 onClick={() => {
                   handleClick();
                   setIsSuccess(false);
                 }}
                 style={{
-                  padding: '12px 28px',
-                  fontSize: '14px',
-                  background: 'transparent',
-                  borderColor: 'var(--border-glass)',
-                  color: 'var(--text-muted)'
+                  padding: '14px 28px',
+                  fontSize: '15px',
+                  background: 'var(--gold)',
+                  borderColor: 'var(--gold)',
+                  color: '#000',
+                  fontWeight: 700,
+                  width: '100%',
+                  boxShadow: '0 0 20px var(--gold-glow)'
                 }}
+                onMouseEnter={handleHover}
               >
-                <span>تخطي والانتظار (سنتواصل معك هاتفياً)</span>
+                <span>موافق</span>
               </button>
             </div>
           </div>
