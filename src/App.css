@@ -3772,6 +3772,7 @@ body:not(.custom-cursor-active) .gold-slider::-webkit-slider-thumb:active {
   flex-direction: column !important;
   gap: 24px !important;
   width: 100% !important;
+  height: auto !important;
   align-items: center !important;
   margin-top: 40px !important;
 }
