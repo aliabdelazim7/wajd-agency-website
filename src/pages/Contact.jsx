@@ -196,7 +196,7 @@ const Contact = () => {
   };
 
   useEffect(() => {
-    const perfMode = localStorage.getItem('wajd_performance_mode') === 'true';
+    const perfMode = true;
     if (perfMode || window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
       console.log('[Accessibility/Performance] Disabling GSAP animations.');
       return;

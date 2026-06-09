@@ -173,7 +173,7 @@ const Portfolio = () => {
     : liveProjects.filter(item => item.categories.includes(filter));
 
   useEffect(() => {
-    const perfMode = localStorage.getItem('wajd_performance_mode') === 'true';
+    const perfMode = true;
     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
       console.log('[Accessibility] prefers-reduced-motion is enabled. Disabling GSAP animations.');
       return;
