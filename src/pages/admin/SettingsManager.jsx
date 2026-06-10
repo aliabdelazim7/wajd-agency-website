@@ -156,6 +156,21 @@ const SettingsManager = () => {
     }
   };
 
+  const handleCacheReset = async () => {
+    handleClick();
+    setSaving(true);
+    setFeedback({ type: '', msg: '' });
+    try {
+      await api.settings.triggerGlobalCacheReset();
+      setFeedback({ type: 'success', msg: 'تم إرسال إشارة إعادة تعيين الكاش العام بنجاح! سيتم تحديث محتوى الموقع لدى جميع الزوار عند تصفحهم التالي.' });
+    } catch (err) {
+      console.error('Error triggering cache reset:', err);
+      setFeedback({ type: 'error', msg: 'فشل فرض تحديث الكاش. يرجى مراجعة سجل الأخطاء.' });
+    } finally {
+      setSaving(false);
+    }
+  };
+
   // WhatsApp Templates CRUD Handlers
   const handleSaveTemplate = async (e) => {
     e.preventDefault();
@@ -589,6 +604,43 @@ const SettingsManager = () => {
               <span>{saving ? 'جاري حفظ الإعدادات...' : 'حفظ وتحديث الإعدادات العامة'}</span>
             </button>
           </form>
+
+          {/* Maintenance & Cache Buster Section */}
+          <div style={{
+            marginTop: '40px',
+            paddingTop: '30px',
+            borderTop: '1px solid var(--border-glass)',
+            textAlign: 'right'
+          }}>
+            <h4 style={{ fontSize: '15px', color: '#ef4444', margin: '0 0 10px', display: 'flex', alignItems: 'center', gap: '8px', justifyContent: 'flex-start', flexDirection: 'row-reverse' }}>
+              <ShieldAlert size={18} />
+              <span>أدوات الصيانة وتحديث الأداء</span>
+            </h4>
+            <p style={{ fontSize: '13px', color: 'var(--text-muted)', margin: '0 0 20px', lineHeight: '1.6' }}>
+              عند إجراء تعديلات رئيسية في الموقع (مثل تعديل نصوص، صور، أو إحصائيات) ولم تظهر فوراً للزوار الجدد بسبب ذاكرة التخزين المؤقت (Cache)، يمكنك استخدام زر إعادة التهيئة بالأسفل لفرض تحديث المحتوى لجميع متصفحات الزوار فوراً.
+            </p>
+            <button
+              type="button"
+              disabled={saving}
+              onClick={handleCacheReset}
+              className="action-btn outline"
+              onMouseEnter={handleHover}
+              style={{
+                borderColor: 'rgba(197, 168, 98, 0.3)',
+                color: 'var(--gold)',
+                padding: '12px 24px',
+                fontSize: '13px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                justifyContent: 'center',
+                marginRight: 'auto'
+              }}
+            >
+              {saving ? <RefreshCw className="spinner-icon" size={16} /> : <RefreshCw size={16} />}
+              <span>فرض إعادة تعيين كاش الموقع لجميع الزوار</span>
+            </button>
+          </div>
         </div>
       )}
 
