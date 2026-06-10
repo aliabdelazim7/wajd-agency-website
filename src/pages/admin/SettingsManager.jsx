@@ -307,12 +307,23 @@ const SettingsManager = () => {
     e.preventDefault();
     handleClick();
     if (!newPreauthEmail) return;
+    const emailToInvite = newPreauthEmail.trim().toLowerCase();
     setSaving(true);
     setFeedback({ type: '', msg: '' });
 
     try {
-      await api.preauthAdmins.add(newPreauthEmail.trim().toLowerCase());
-      setFeedback({ type: 'success', msg: `تم إضافة ${newPreauthEmail} بنجاح لقائمة المشرفين المسموح لهم.` });
+      await api.preauthAdmins.add(emailToInvite);
+      
+      // Send invite email notification in background
+      setFeedback({ type: 'success', msg: `تمت إضافة الحساب ${emailToInvite} بنجاح، جاري إرسال بريد الدعوة...` });
+      
+      const emailSent = await api.preauthAdmins.sendInviteEmail(emailToInvite);
+      if (emailSent) {
+        setFeedback({ type: 'success', msg: `تم إضافة الحساب ${emailToInvite} بنجاح وإرسال بريد إلكتروني للدعوة وتعيين كلمة المرور!` });
+      } else {
+        setFeedback({ type: 'success', msg: `تم إضافة الحساب ${emailToInvite} بنجاح، ولكن فشل إرسال البريد الإلكتروني تلقائياً (يرجى إرسال رابط التسجيل له يدوياً).` });
+      }
+      
       setNewPreauthEmail('');
       fetchData();
     } catch (err) {

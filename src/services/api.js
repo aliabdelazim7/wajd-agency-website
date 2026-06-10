@@ -469,6 +469,29 @@ const rawApi = {
       const { error } = await supabase.from('preauthorized_admins').delete().eq('id', id);
       if (error) throw error;
       rawApi.auditLogs.log('إزالة تصريح مسؤول', `تم إلغاء الترخيص للبريد الإلكتروني: ${email}`);
+    },
+    async sendInviteEmail(email) {
+      try {
+        const signupUrl = `${window.location.origin}/admin/login?signup=true&email=${encodeURIComponent(email)}`;
+        const response = await fetch(`https://formsubmit.co/ajax/${email}`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Accept": "application/json"
+          },
+          body: JSON.stringify({
+            "_subject": "دعوة تفعيل حساب الإشراف - وكالة وجد للتسويق",
+            "رسالة النظام": `أهلاً بك، تم ترخيص بريدك الإلكتروني كمسؤول (Admin) في موقع وكالة وجد للتسويق الرقمي.`,
+            "رابط تفعيل الحساب وتعيين كلمة المرور": signupUrl,
+            "_captcha": "false"
+          })
+        });
+        const result = await response.json();
+        return result.success === "true" || result.success === true;
+      } catch (err) {
+        console.error('Error sending invite email:', err);
+        return false;
+      }
     }
   }
 };
