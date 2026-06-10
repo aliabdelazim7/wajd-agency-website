@@ -467,8 +467,8 @@ function AppContent() {
       {/* Dynamic tracking pixel and script injector */}
       <ScriptInjector />
 
-      {/* Floating WhatsApp Widget */}
-      {!isAdminRoute && <FloatingWhatsapp />}
+      {/* Floating WhatsApp Widget (Kept in codebase, deactivated until number is ready) */}
+      {/* {!isAdminRoute && <FloatingWhatsapp />} */}
 
       {/* Aurora Background */}
       <div className="aurora-container" aria-hidden="true">
