@@ -129,5 +129,13 @@ begin
 end;
 $$ language plpgsql;
 
+drop trigger if exists traffic_analytics_update on traffic_analytics;
 create trigger traffic_analytics_update before update on traffic_analytics
 for each row execute function set_traffic_updated();
+
+create table if not exists whatsapp_templates (
+  id bigserial primary key,
+  title text not null,
+  message text not null,
+  created_at timestamp with time zone default now()
+);

@@ -1,10 +1,10 @@
 -- Seed initial site settings
-insert into site_settings (id, site_name, contact_email, social_links)
-values (1, 'وكالة وجد التسويقية', 'wajd.marketing@gmail.com', '{"instagram": "https://instagram.com/wajd.agency", "twitter": "https://twitter.com/wajd_agency", "linktree": "https://linktr.ee/wajd.agency"}'::jsonb)
+insert into site_settings (id, company_name, email, instagram_url, whatsapp)
+values (1, 'وكالة وجد التسويقية', 'wajd.marketing@gmail.com', 'https://instagram.com/wajd.agency', '+966500000000')
 on conflict (id) do nothing;
 
 -- Seed initial hero content
-insert into hero_content (id, title, subtitle, background_image)
+insert into hero_content (id, headline, subheadline, background_image)
 values (1, 'وجد', 'نُوجِد الأثر الذي يتحول إلى مبيعات', '/src/assets/hero-bg.jpg')
 on conflict (id) do nothing;
 
@@ -18,11 +18,11 @@ values
 on conflict do nothing;
 
 -- Seed default testimonials
-insert into testimonials (name, company, testimonial, rating)
+insert into testimonials (name, company, quote)
 values 
-  ('عبدالعزيز العويد', 'العويد للعود', 'التعاون مع وكالة وجد غير مفاهيمنا في التسويق الرقمي. حققنا عائد إعلاني فاق توقعاتنا وارتفعت مبيعاتنا بشكل ملحوظ.', 5),
-  ('محمد الشريف', 'بارنر للأثاث', 'فريق محترف ومتعاون، يهتمون بأدق التفاصيل والنتائج حقيقية وشفافة.', 5),
-  ('سارة الحربي', 'متجر منابت', 'من أفضل الوكالات التي تعاملنا معها، التزام بالوقت ونتائج ممتازة على منصات سلة وزد.', 5)
+  ('عبدالعزيز العويد', 'العويد للعود', 'التعاون مع وكالة وجد غير مفاهيمنا في التسويق الرقمي. حققنا عائد إعلاني فاق توقعاتنا وارتفعت مبيعاتنا بشكل ملحوظ.'),
+  ('محمد الشريف', 'بارنر للأثاث', 'فريق محترف ومتعاون، يهتمون بأدق التفاصيل والنتائج حقيقية وشفافة.'),
+  ('سارة الحربي', 'متجر منابت', 'من أفضل الوكالات التي تعاملنا معها، التزام بالوقت ونتائج ممتازة على منصات سلة وزد.')
 on conflict do nothing;
 
 -- Seed default FAQs
